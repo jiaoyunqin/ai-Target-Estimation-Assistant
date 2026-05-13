@@ -6353,7 +6353,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-sm font-semibold text-gray-900">智能匹配参考活动说明</h4>
+                                <h4 className="text-sm font-semibold text-gray-900">AI 测算逻辑说明</h4>
                                 <button
                                   onClick={() => {
                                     // 一键更换参考大促的逻辑
@@ -6371,10 +6371,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   🔄 一键更换
                                 </button>
                               </div>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <p>根据您输入的大促类型（大促{promotionType}）及活动周期，系统智能匹配了相似度最高的 <strong className="text-blue-700">{currentConfig.name}</strong> 作为参考。</p>
-                                <p>匹配维度包括：<span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] mr-1">大促类型匹配</span><span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] mr-1">BigDay与节奏匹配</span><span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] mr-1">目标量级接近</span></p>
-                                <p>基于历史{promotionType === '618' ? '618' : promotionType}大促的6天分日数据，系统将生成 <strong className="text-green-700">自然水位GMV预测</strong>，即不投放任何预算情况下的预测基线。</p>
+                              <div className="text-xs text-gray-600 space-y-2">
+                                <p>AI 将通过以下 3 步，为您还原并推算本次大促在不投入任何预算及策略下的基础盘（即自然水位）：</p>
+                                <div className="pl-2 space-y-1.5">
+                                  <p><strong className="text-blue-700">第 1 步｜追溯与匹配：</strong>提取过去 2-3 年同类型、同时期的历史大促真实 GMV 数据。</p>
+                                  <p><strong className="text-blue-700">第 2 步｜剥离与还原：</strong>智能剔除历史大促期间因 "活动补贴、流量倾斜、特殊宣发" 等带来的增量，还原出最纯粹的「历史自然水位」。</p>
+                                  <p><strong className="text-blue-700">第 3 步｜推算与拟合：</strong>结合近期平销期的「大盘自然同比增幅」与「环境因素（如气象等）」，对历史自然水位进行加码与拟合，得出本次大促的预测自然水位。</p>
+                                </div>
                               </div>
                             </div>
                           </div>
