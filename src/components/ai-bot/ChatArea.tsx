@@ -903,6 +903,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto relative">
+          {/* Context Badge - Only for Promotion Agent */}
+          {isPromotionAgent && (
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full">
+                <span className="text-purple-600">🎯</span>
+                <span className="text-xs font-medium text-purple-700">当前检索范围：大促 &gt; 目标测算专属知识库</span>
+                <div className="relative group">
+                  <HelpCircle className="w-3.5 h-3.5 text-purple-400 cursor-help" />
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    AI 将优先在带有「目标测算」标签的知识中搜索
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="relative">
             <div className="bg-gray-50 rounded-2xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all overflow-hidden flex flex-col">
               <input

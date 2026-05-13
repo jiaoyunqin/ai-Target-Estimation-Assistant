@@ -9,41 +9,52 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ onBackToChat }) =>
   const [activeTab, setActiveTab] = useState<'unstructured' | 'structured'>('unstructured');
   const [structuredSubTab, setStructuredSubTab] = useState<'attribution' | 'threshold' | 'cases' | 'allocation'>('attribution');
   const [showBindModal, setShowBindModal] = useState(false);
+  const [scenarioFilter, setScenarioFilter] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchScenario, setSearchScenario] = useState<string | null>(null);
 
   // Mock data for unstructured knowledge
   const unstructuredDocs = [
     {
       id: 1,
-      name: '平台用增Q2业务复盘',
-      category: '复盘文档',
-      business: '平台用增',
+      name: '大盘自然水位预测还原逻辑',
+      category: '资管规则',
+      business: '全业务',
       permission: '全员可见',
       status: 'success',
       lastSync: '2026-03-31 09:00',
-      maintainer: '张明'
+      maintainer: '张明',
+      scenarioTags: ['目标测算']
     },
     {
       id: 2,
-      name: '资管BP操作手册',
+      name: '全周期领航预算消耗及流速预测规范',
       category: '资管规则',
       business: '全业务',
       permission: '仅对应业务可见',
       status: 'syncing',
       lastSync: '2026-03-31 08:30',
-      maintainer: '李强'
+      maintainer: '李强',
+      scenarioTags: ['预算规划']
     },
     {
       id: 3,
-      name: '电商行业Q1报告',
-      category: '行业报告',
+      name: '历年618与双11大促转化率复盘',
+      category: '复盘文档',
       business: '全业务',
       permission: '全员可见',
       status: 'error',
       error: '飞书权限不足',
       lastSync: '2026-03-30 18:00',
-      maintainer: '王芳'
+      maintainer: '王芳',
+      scenarioTags: ['全局', '目标测算']
     }
   ];
+  
+  // Filtered docs based on scenario
+  const filteredDocs = scenarioFilter 
+    ? unstructuredDocs.filter(doc => doc.scenarioTags.includes(scenarioFilter))
+    : unstructuredDocs;
 
   // Mock data for structured knowledge
   const attributionRules = [
@@ -176,81 +187,106 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ onBackToChat }) =>
           </div>
 
           {/* Unstructured Knowledge Base */}
-          {activeTab === 'unstructured' && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">文档名称</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">知识分类</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">所属业务范围</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">权限范围</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">同步状态</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">最近同步时间</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">维护人</th>
-                      <th className="px-4 py-3 text-left font-bold text-gray-700">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {unstructuredDocs.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <a href="#" className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                            {doc.name}
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{doc.category}</td>
-                        <td className="px-4 py-3 text-gray-600">{doc.business}</td>
-                        <td className="px-4 py-3 text-gray-600">{doc.permission}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            {doc.status === 'success' && (
-                              <>
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                                <span className="text-green-700">同步成功</span>
-                              </>
+      {activeTab === 'unstructured' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">文档名称</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">知识分类</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">所属业务范围</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">权限范围</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <span>应用场景</span>
+                      <select 
+                        value={scenarioFilter || ''}
+                        onChange={(e) => setScenarioFilter(e.target.value || null)}
+                        className="text-xs bg-white border border-gray-300 rounded px-1 py-0.5"
+                      >
+                        <option value="">全部</option>
+                        <option value="目标测算">目标测算</option>
+                        <option value="预算规划">预算规划</option>
+                        <option value="全局">全局</option>
+                        <option value="日常分析">日常分析</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">同步状态</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">最近同步时间</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">维护人</th>
+                  <th className="px-4 py-3 text-left font-bold text-gray-700">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredDocs.map((doc) => (
+                  <tr key={doc.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <a href="#" className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                        {doc.name}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{doc.category}</td>
+                    <td className="px-4 py-3 text-gray-600">{doc.business}</td>
+                    <td className="px-4 py-3 text-gray-600">{doc.permission}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {doc.scenarioTags.map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {doc.status === 'success' && (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span className="text-green-700">同步成功</span>
+                          </>
+                        )}
+                        {doc.status === 'syncing' && (
+                          <>
+                            <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                            <span className="text-blue-700">同步中</span>
+                          </>
+                        )}
+                        {doc.status === 'error' && (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                            <span className="text-red-700">同步失败</span>
+                            {doc.error && (
+                              <span className="text-xs text-red-500">({doc.error})</span>
                             )}
-                            {doc.status === 'syncing' && (
-                              <>
-                                <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                                <span className="text-blue-700">同步中</span>
-                              </>
-                            )}
-                            {doc.status === 'error' && (
-                              <>
-                                <AlertCircle className="w-4 h-4 text-red-500" />
-                                <span className="text-red-700">同步失败</span>
-                                {doc.error && (
-                                  <span className="text-xs text-red-500">({doc.error})</span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{doc.lastSync}</td>
-                        <td className="px-4 py-3 text-gray-600">{doc.maintainer}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <button className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors">
-                              手动同步
-                            </button>
-                            <button className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors">
-                              编辑配置
-                            </button>
-                            <button className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
-                              取消绑定
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{doc.lastSync}</td>
+                    <td className="px-4 py-3 text-gray-600">{doc.maintainer}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors">
+                          手动同步
+                        </button>
+                        <button className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors">
+                          编辑配置
+                        </button>
+                        <button className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
+                          取消绑定
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
           {/* Structured Knowledge Base */}
           {activeTab === 'structured' && (
@@ -440,14 +476,32 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ onBackToChat }) =>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Search className="w-5 h-5 text-blue-600" />
-                知识检索测试
+                知识检索
               </h3>
               <div className="space-y-4">
+                {/* 场景标签过滤 */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">选择应用场景（可选）</label>
+                  <select
+                    value={searchScenario || ''}
+                    onChange={(e) => setSearchScenario(e.target.value || null)}
+                    className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">全部场景</option>
+                    <option value="目标测算">目标测算</option>
+                    <option value="预算规划">预算规划</option>
+                    <option value="全局">全局</option>
+                    <option value="日常分析">日常分析</option>
+                  </select>
+                </div>
+                {/* 搜索输入框 */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     placeholder="输入关键词测试知识检索..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
@@ -455,7 +509,7 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ onBackToChat }) =>
                   开始检索测试
                 </button>
                 <p className="text-xs text-gray-500">
-                  测试当前知识库返回的结果是否正确，支持标注「正确/错误/需补充」
+                  支持标签过滤 + 语义检索的双重检索能力，测试当前知识库返回的结果是否正确，支持标注「正确/错误/需补充」
                 </p>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database } from 'lucide-react';
+import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database, Workflow } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie } from 'recharts';
 
 interface ReportAreaProps {
@@ -265,8 +265,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [selectedDimension, setSelectedDimension] = useState<'business' | 'play' | 'audience'>('business');
   const [showFeishuModal, setShowFeishuModal] = useState<{ show: boolean; ownerName: string; businessName: string; budget: string } | null>(null);
   const [promoView, setPromoView] = useState<'budget' | 'target' | 'monitor'>('budget');
-  const [targetTab, setTargetTab] = useState<'calculation' | 'reference'>('reference');
-  const [referenceSubTab, setReferenceSubTab] = useState<'history' | 'external' | 'target_budget' | 'strategy'>('target_budget');
+  const [targetTab, setTargetTab] = useState<'calculation' | 'reference' | 'logic'>('reference');
+  const [referenceSubTab, setReferenceSubTab] = useState<'history' | 'external'>('history');
   
   // 目标测算步骤管理 - 从step1开始，逐步执行
   const [calculationStep, setCalculationStep] = useState(0);
@@ -412,10 +412,425 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   const [showBudgetChart, setShowBudgetChart] = useState(false);
   
+  // 行业数据配置 - 可复用
+  const industryDataConfig = {
+    '3C数码': {
+      payGmv: 3200,
+      deliveryGmv: 2880,
+      subIndustries: [
+        { name: '手机', value: 1600, color: '#3B82F6' },
+        { name: '电脑整机', value: 960, color: '#6366F1' },
+        { name: '数码配件', value: 640, color: '#8B5CF6' }
+      ]
+    },
+    '家电': {
+      payGmv: 2450,
+      deliveryGmv: 2280,
+      subIndustries: [
+        { name: '大家电', value: 1225, color: '#10B981' },
+        { name: '小家电', value: 735, color: '#34D399' },
+        { name: '厨房电器', value: 490, color: '#6EE7B7' }
+      ]
+    },
+    '服饰': {
+      payGmv: 2100,
+      deliveryGmv: 1720,
+      subIndustries: [
+        { name: '女装', value: 1050, color: '#EC4899' },
+        { name: '男装', value: 525, color: '#F472B6' },
+        { name: '鞋靴', value: 525, color: '#F9A8D4' }
+      ]
+    },
+    '食品快消': {
+      payGmv: 1850,
+      deliveryGmv: 1760,
+      subIndustries: [
+        { name: '休闲食品', value: 740, color: '#F59E0B' },
+        { name: '饮料', value: 555, color: '#FBBF24' },
+        { name: '生鲜', value: 555, color: '#FDE68A' }
+      ]
+    },
+    '美妆个护': {
+      payGmv: 1380,
+      deliveryGmv: 1200,
+      subIndustries: [
+        { name: '护肤品', value: 621, color: '#8B5CF6' },
+        { name: '彩妆', value: 483, color: '#A78BFA' },
+        { name: '个护', value: 276, color: '#C4B5FD' }
+      ]
+    }
+  };
+  
+  // 分行业数据 - 可复用
+  const industryTableData = [
+    { name: '3C数码', payGmv: 3200, percentage: 27.1, deliveryGmv: 2880, ratio: 90.0, growth: 15.2 },
+    { name: '家电', payGmv: 2450, percentage: 20.8, deliveryGmv: 2280, ratio: 93.1, growth: 11.8 },
+    { name: '服饰', payGmv: 2100, percentage: 17.8, deliveryGmv: 1720, ratio: 81.9, growth: 8.5 },
+    { name: '食品快消', payGmv: 1850, percentage: 15.7, deliveryGmv: 1760, ratio: 95.1, growth: 13.4 },
+    { name: '美妆个护', payGmv: 1380, percentage: 11.7, deliveryGmv: 1200, ratio: 87.0, growth: 10.2 },
+    { name: '其他', payGmv: 820, percentage: 6.9, deliveryGmv: 710, ratio: 86.6, growth: 6.8 }
+  ];
+  
   // Step5 测算结果输出相关状态
-  const [resultChartTab, setResultChartTab] = useState<'overview' | 'phase' | 'delivery' | 'session' | 'industry'>('overview');
+  const [resultChartTab, setResultChartTab] = useState<'industry'>('industry');
   const [resultTableTab, setResultTableTab] = useState<'industry' | 'phase' | 'subIndustry' | 'daily' | 'delivery' | 'session'>('industry');
   const [selectedIndustryForDonut, setSelectedIndustryForDonut] = useState('3C数码');
+  const [selectedDashboardIndustry, setSelectedDashboardIndustry] = useState('total'); // 'total' | '3c' | 'home' | 'beauty'
+  
+  // 联动状态存储
+  interface SelectedPoint {
+    date?: string;
+    industryKey?: string;
+    industryName?: string;
+  }
+  const [selectedPoint, setSelectedPoint] = useState<SelectedPoint>({});
+  
+  // 右侧面板需要的明细数据结构
+  interface DetailData {
+    title: string;
+    totalGmv: number;
+    children: { name: string; value: number; ratio: string; color: string }[];
+  }
+  
+  // Mock 数据源中枢
+  interface TrendPoint { date: string; value: number; }
+  interface BreakdownItem { name: string; value: number; ratio: string; color: string; }
+  interface LineSeries {
+    name: string;
+    isMain: boolean;
+    color: string;
+    trendData: TrendPoint[];
+  }
+  interface IndustryDashboardData {
+    xAxis: string[];
+    series: LineSeries[];
+    totalGmv: number;
+    breakdown: BreakdownItem[];
+  }
+  
+  const dashboardMockData: Record<string, IndustryDashboardData> = {
+    // 大盘视角：看一级行业
+    'total': {
+      xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
+      series: [
+        {
+          name: '大盘总计',
+          isMain: true,
+          color: '#F97316',
+          trendData: [
+            { date: '06/15', value: 1500 }, 
+            { date: '06/16', value: 1570 },
+            { date: '06/17', value: 1630 },
+            { date: '06/18', value: 5500 },
+            { date: '06/19', value: 2845 },
+            { date: '06/20', value: 1980 }
+          ]
+        },
+        {
+          name: '3C数码',
+          isMain: false,
+          color: '#3B82F6',
+          trendData: [
+            { date: '06/15', value: 410 }, 
+            { date: '06/16', value: 430 },
+            { date: '06/17', value: 450 },
+            { date: '06/18', value: 1440 },
+            { date: '06/19', value: 750 },
+            { date: '06/20', value: 520 }
+          ]
+        },
+        {
+          name: '家电',
+          isMain: false,
+          color: '#10B981',
+          trendData: [
+            { date: '06/15', value: 320 }, 
+            { date: '06/16', value: 340 },
+            { date: '06/17', value: 360 },
+            { date: '06/18', value: 1100 },
+            { date: '06/19', value: 580 },
+            { date: '06/20', value: 400 }
+          ]
+        },
+        {
+          name: '服饰',
+          isMain: false,
+          color: '#EC4899',
+          trendData: [
+            { date: '06/15', value: 240 }, 
+            { date: '06/16', value: 260 },
+            { date: '06/17', value: 280 },
+            { date: '06/18', value: 900 },
+            { date: '06/19', value: 460 },
+            { date: '06/20', value: 320 }
+          ]
+        },
+        {
+          name: '食品快消',
+          isMain: false,
+          color: '#F59E0B',
+          trendData: [
+            { date: '06/15', value: 250 }, 
+            { date: '06/16', value: 270 },
+            { date: '06/17', value: 290 },
+            { date: '06/18', value: 920 },
+            { date: '06/19', value: 480 },
+            { date: '06/20', value: 330 }
+          ]
+        },
+        {
+          name: '美妆个护',
+          isMain: false,
+          color: '#8B5CF6',
+          trendData: [
+            { date: '06/15', value: 170 }, 
+            { date: '06/16', value: 180 },
+            { date: '06/17', value: 190 },
+            { date: '06/18', value: 640 },
+            { date: '06/19', value: 345 },
+            { date: '06/20', value: 230 }
+          ]
+        },
+        {
+          name: '其他',
+          isMain: false,
+          color: '#6B7280',
+          trendData: [
+            { date: '06/15', value: 110 }, 
+            { date: '06/16', value: 90 },
+            { date: '06/17', value: 60 },
+            { date: '06/18', value: 500 },
+            { date: '06/19', value: 230 },
+            { date: '06/20', value: 180 }
+          ]
+        }
+      ],
+      totalGmv: 10550,
+      breakdown: [
+        { name: '3C数码', value: 2880, ratio: '27.3%', color: '#3B82F6' },
+        { name: '家电', value: 2280, ratio: '21.6%', color: '#10B981' },
+        { name: '服饰', value: 1720, ratio: '16.3%', color: '#EC4899' },
+        { name: '食品快消', value: 1760, ratio: '16.7%', color: '#F59E0B' },
+        { name: '美妆个护', value: 1200, ratio: '11.4%', color: '#8B5CF6' },
+        { name: '其他', value: 710, ratio: '6.7%', color: '#6B7280' }
+      ]
+    },
+    // 3C数码视角：看二级行业
+    '3c': {
+      xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
+      series: [
+        {
+          name: '3C数码总计',
+          isMain: true,
+          color: '#3B82F6',
+          trendData: [
+            { date: '06/15', value: 410 }, 
+            { date: '06/16', value: 430 },
+            { date: '06/17', value: 450 },
+            { date: '06/18', value: 1440 },
+            { date: '06/19', value: 750 },
+            { date: '06/20', value: 520 }
+          ]
+        },
+        {
+          name: '手机',
+          isMain: false,
+          color: '#6366F1',
+          trendData: [
+            { date: '06/15', value: 260 }, 
+            { date: '06/16', value: 275 },
+            { date: '06/17', value: 290 },
+            { date: '06/18', value: 900 },
+            { date: '06/19', value: 470 },
+            { date: '06/20', value: 325 }
+          ]
+        },
+        {
+          name: '电脑整机',
+          isMain: false,
+          color: '#8B5CF6',
+          trendData: [
+            { date: '06/15', value: 110 }, 
+            { date: '06/16', value: 120 },
+            { date: '06/17', value: 125 },
+            { date: '06/18', value: 400 },
+            { date: '06/19', value: 210 },
+            { date: '06/20', value: 145 }
+          ]
+        },
+        {
+          name: '数码配件',
+          isMain: false,
+          color: '#A78BFA',
+          trendData: [
+            { date: '06/15', value: 40 }, 
+            { date: '06/16', value: 35 },
+            { date: '06/17', value: 35 },
+            { date: '06/18', value: 140 },
+            { date: '06/19', value: 70 },
+            { date: '06/20', value: 50 }
+          ]
+        }
+      ],
+      totalGmv: 2880,
+      breakdown: [
+        { name: '手机', value: 1800, ratio: '62.5%', color: '#3B82F6' },
+        { name: '电脑整机', value: 800, ratio: '27.8%', color: '#6366F1' },
+        { name: '数码配件', value: 280, ratio: '9.7%', color: '#8B5CF6' }
+      ]
+    },
+    // 家电视角：看二级行业
+    'home': {
+      xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
+      series: [
+        {
+          name: '家电总计',
+          isMain: true,
+          color: '#10B981',
+          trendData: [
+            { date: '06/15', value: 320 }, 
+            { date: '06/16', value: 340 },
+            { date: '06/17', value: 360 },
+            { date: '06/18', value: 1100 },
+            { date: '06/19', value: 580 },
+            { date: '06/20', value: 400 }
+          ]
+        },
+        {
+          name: '大家电',
+          isMain: false,
+          color: '#34D399',
+          trendData: [
+            { date: '06/15', value: 160 }, 
+            { date: '06/16', value: 170 },
+            { date: '06/17', value: 180 },
+            { date: '06/18', value: 550 },
+            { date: '06/19', value: 290 },
+            { date: '06/20', value: 200 }
+          ]
+        },
+        {
+          name: '小家电',
+          isMain: false,
+          color: '#6EE7B7',
+          trendData: [
+            { date: '06/15', value: 95 }, 
+            { date: '06/16', value: 100 },
+            { date: '06/17', value: 108 },
+            { date: '06/18', value: 330 },
+            { date: '06/19', value: 175 },
+            { date: '06/20', value: 120 }
+          ]
+        },
+        {
+          name: '厨房电器',
+          isMain: false,
+          color: '#A7F3D0',
+          trendData: [
+            { date: '06/15', value: 65 }, 
+            { date: '06/16', value: 70 },
+            { date: '06/17', value: 72 },
+            { date: '06/18', value: 220 },
+            { date: '06/19', value: 115 },
+            { date: '06/20', value: 80 }
+          ]
+        }
+      ],
+      totalGmv: 2280,
+      breakdown: [
+        { name: '大家电', value: 1140, ratio: '50.0%', color: '#10B981' },
+        { name: '小家电', value: 684, ratio: '30.0%', color: '#34D399' },
+        { name: '厨房电器', value: 456, ratio: '20.0%', color: '#6EE7B7' }
+      ]
+    },
+    // 美妆个护视角：看二级行业
+    'beauty': {
+      xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
+      series: [
+        {
+          name: '美妆个护总计',
+          isMain: true,
+          color: '#8B5CF6',
+          trendData: [
+            { date: '06/15', value: 170 }, 
+            { date: '06/16', value: 180 },
+            { date: '06/17', value: 190 },
+            { date: '06/18', value: 640 },
+            { date: '06/19', value: 345 },
+            { date: '06/20', value: 230 }
+          ]
+        },
+        {
+          name: '护肤品',
+          isMain: false,
+          color: '#A78BFA',
+          trendData: [
+            { date: '06/15', value: 115 }, 
+            { date: '06/16', value: 120 },
+            { date: '06/17', value: 130 },
+            { date: '06/18', value: 430 },
+            { date: '06/19', value: 230 },
+            { date: '06/20', value: 155 }
+          ]
+        },
+        {
+          name: '彩妆',
+          isMain: false,
+          color: '#C4B5FD',
+          trendData: [
+            { date: '06/15', value: 55 }, 
+            { date: '06/16', value: 60 },
+            { date: '06/17', value: 60 },
+            { date: '06/18', value: 210 },
+            { date: '06/19', value: 115 },
+            { date: '06/20', value: 75 }
+          ]
+        }
+      ],
+      totalGmv: 1200,
+      breakdown: [
+        { name: '护肤品', value: 800, ratio: '66.7%', color: '#8B5CF6' },
+        { name: '彩妆', value: 400, ratio: '33.3%', color: '#A78BFA' }
+      ]
+    }
+  };
+  
+  // Mock: 右侧面板渲染逻辑
+  const getRightPanelData = (point: SelectedPoint): DetailData => {
+    // 如果有选中的日期点，优先用日期点的数据
+    if (point.industryKey && point.date) {
+      const pointIndustryKey = point.industryKey === '3C数码' ? '3c' : 
+                               point.industryKey === '家电' ? 'home' : 
+                               point.industryKey === '美妆个护' ? 'beauty' : 'total';
+      
+      if (dashboardMockData[pointIndustryKey]) {
+        const data = dashboardMockData[pointIndustryKey];
+        return {
+          title: `${point.date} - ${point.industryKey} 发货结构`,
+          totalGmv: Math.round(data.totalGmv * 0.35), // 模拟单日数据
+          children: data.breakdown
+        };
+      }
+    }
+    
+    // 否则根据 selectedDashboardIndustry 展示数据
+    const currentData = dashboardMockData[selectedDashboardIndustry] || dashboardMockData['total'];
+    
+    let title = '全周期 各行业发货结构';
+    if (selectedDashboardIndustry === '3c') {
+      title = '全周期 3C数码 发货结构';
+    } else if (selectedDashboardIndustry === 'home') {
+      title = '全周期 家电 发货结构';
+    } else if (selectedDashboardIndustry === 'beauty') {
+      title = '全周期 美妆个护 发货结构';
+    }
+    
+    return {
+      title,
+      totalGmv: currentData.totalGmv,
+      children: currentData.breakdown
+    };
+  };
   
   const handleConfirmStep3 = () => {
     // 更新折线图，显示含预算支付GMV
@@ -620,6 +1035,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [isCalculationComplete, setIsCalculationComplete] = useState(true);
   const [totalBudget, setTotalBudget] = useState('8000');
   const [targetGmv, setTargetGmv] = useState(15470);
+  const [settlementRate, setSettlementRate] = useState(85.2);
   
   // Step 2 优化：增量目标相关状态
   const [focusedInput, setFocusedInput] = useState<'percentage' | 'gmv' | 'total' | null>(null);
@@ -5552,6 +5968,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <LayoutGrid className="w-4 h-4" />
                   测算参考
                 </button>
+                <button
+                  onClick={() => setTargetTab('logic')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'logic' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Workflow className="w-4 h-4" />
+                  测算逻辑
+                </button>
               </div>
               
               {/* 测算目标 Tab 内容 */}
@@ -6669,36 +7092,55 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <th className="py-2 px-3 text-center">阶段</th>
                                 <th className="py-2 px-3 text-right">AI 建议支付 GMV（万）</th>
                                 <th className="py-2 px-3 text-right">人工修正支付 GMV（万）</th>
+                                <th className="py-2 px-3 text-center">预估结算率</th>
+                                <th className="py-2 px-3 text-right">结算 GMV（万）</th>
                                 <th className="py-2 px-3 text-center">说明</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y">
-                              {dailyGmvTargets.map((target, index) => (
-                                <tr key={index}>
-                                  <td className="py-2 px-3 font-medium">{target.date.split('-').slice(1).join('/')}</td>
-                                  <td className="py-2 px-3 text-center text-gray-600">{target.phase}</td>
-                                  <td className="py-2 px-3 text-right text-gray-500">{target.aiTarget.toLocaleString()}</td>
-                                  <td className="py-2 px-3">
-                                    <input
-                                      type="number"
-                                      value={target.manualTarget}
-                                      onChange={(e) => {
-                                        const newTargets = [...dailyGmvTargets];
-                                        newTargets[index].manualTarget = parseInt(e.target.value) || 0;
-                                        setDailyGmvTargets(newTargets);
-                                      }}
-                                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3 text-center text-gray-400 text-xs">-</td>
-                                </tr>
-                              ))}
+                              {dailyGmvTargets.map((target, index) => {
+                                const isBigDay = index === 3;
+                                const isWeekend = index === 0 || index === 5;
+                                const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
+                                const settlementGmv = Math.round(target.manualTarget * settlementRate);
+                                return (
+                                  <tr key={index}>
+                                    <td className="py-2 px-3 font-medium">{target.date.split('-').slice(1).join('/')}</td>
+                                    <td className="py-2 px-3 text-center text-gray-600">{target.phase}</td>
+                                    <td className="py-2 px-3 text-right text-gray-500">{target.aiTarget.toLocaleString()}</td>
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="number"
+                                        value={target.manualTarget}
+                                        onChange={(e) => {
+                                          const newTargets = [...dailyGmvTargets];
+                                          newTargets[index].manualTarget = parseInt(e.target.value) || 0;
+                                          setDailyGmvTargets(newTargets);
+                                        }}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                    <td className="py-2 px-3 text-center text-cyan-600">{(settlementRate * 100).toFixed(1)}%</td>
+                                    <td className="py-2 px-3 text-right text-cyan-700 font-medium">{settlementGmv.toLocaleString()}</td>
+                                    <td className="py-2 px-3 text-center text-gray-400 text-xs">-</td>
+                                  </tr>
+                                );
+                              })}
                               <tr className="bg-gray-50 font-bold">
                                 <td className="py-2 px-3">合计</td>
                                 <td className="py-2 px-3 text-center">-</td>
                                 <td className="py-2 px-3 text-right">{dailyGmvTargets.reduce((sum, t) => sum + t.aiTarget, 0).toLocaleString()}</td>
                                 <td className="py-2 px-3 text-right font-medium text-green-700">
                                   {dailyGmvTargets.reduce((sum, t) => sum + t.manualTarget, 0).toLocaleString()}
+                                </td>
+                                <td className="py-2 px-3 text-center text-cyan-600">-</td>
+                                <td className="py-2 px-3 text-right font-medium text-cyan-700">
+                                  {dailyGmvTargets.reduce((sum, t, index) => {
+                                    const isBigDay = index === 3;
+                                    const isWeekend = index === 0 || index === 5;
+                                    const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
+                                    return sum + Math.round(t.manualTarget * settlementRate);
+                                  }, 0).toLocaleString()}
                                 </td>
                                 <td className="py-2 px-3 text-center text-xs text-gray-500">与 Step2 大盘总目标一致</td>
                               </tr>
@@ -6772,6 +7214,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </div>
                             </div>
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Step4 核心数据卡片区域 - 只在Step4测算完成后显示 */}
+                      {stepCalculated[3] && (
+                        <div className="grid grid-cols-2 gap-4 mb-4">
                         </div>
                       )}
                       
@@ -7332,7 +7780,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <div className="bg-green-50 border-t border-green-200 p-4 -mx-6 -mb-6 rounded-b-xl">
                           <div className="flex items-center gap-2">
                             <CheckCircle className="w-5 h-5 text-green-600" />
-                            <span className="text-sm font-medium text-green-800">全链路目标已锁定，已同步至供应链、财务、运营等业务线</span>
+                            <span className="text-sm font-medium text-green-800">全链路目标已锁定，您可点击右上角“分享”按钮，导出报告或直接分享此测算链接。</span>
                           </div>
                         </div>
                       )}
@@ -7384,97 +7832,109 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {calculationStep >= 1 && (
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                    <div className="text-xs text-blue-600 mb-1">目标 GMV</div>
-                    <div className="text-2xl font-bold text-blue-900" style={{ width: '300px' }}>
-                      <input
-                        type="number"
-                        value={targetGmv}
-                        onChange={(e) => setTargetGmv(Number(e.target.value))}
-                        className="text-2xl font-bold text-blue-900 bg-transparent border-none focus:outline-none"
-                        style={{ width: '100px' }}
-                      />
-                      万
+              {/* Step2核心数据卡片区域 - 仅在step2测算完成后显示 */}
+              {stepCalculated[1] && (
+                <>
+                  {/* 第一区块：目标管控区 */}
+                  <div className="mb-8">
+                    <div className="text-sm text-gray-500 mb-3 font-medium">目标设定与评估</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* 目标 GMV */}
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                        <div className="text-xs text-blue-600 mb-1">目标 GMV</div>
+                        <div className="text-2xl font-bold text-blue-900" style={{ width: '300px' }}>
+                          <input
+                            type="number"
+                            value={targetGmv}
+                            onChange={(e) => setTargetGmv(Number(e.target.value))}
+                            className="text-2xl font-bold text-blue-900 bg-transparent border-none focus:outline-none"
+                            style={{ width: '100px' }}
+                          />
+                          万
+                        </div>
+                        <div className="text-xs text-blue-500 mt-1">可修改，资管设定目标</div>
+                      </div>
+                      
+                      {/* 目标差值 (Gap) */}
+                      {stepCalculated[2] && (
+                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
+                          <div className="text-xs text-red-600 mb-1">目标差值 (Gap)</div>
+                          <div className="text-2xl font-bold text-red-700">
+                            {(targetGmv - 12000).toLocaleString()}万
+                          </div>
+                          <div className="text-xs text-red-500 mt-1">
+                            完成率 {Math.round((12000 / targetGmv) * 100)}%
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 目标达成概率 */}
+                      {stepCalculated[2] && (
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                          <div className="text-xs text-green-600 mb-1">目标达成概率</div>
+                          <div className="text-2xl font-bold text-green-700">92%</div>
+                          <div className="text-xs text-green-500 mt-1">基于当前预算和历史转化率测算</div>
+                        </div>
+                      )}
+                      
+                      {/* 整体同比增速 */}
+                      {calculationStep >= 4 && (
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                          <div className="text-xs text-green-600 mb-1">整体同比增速</div>
+                          <div className="text-2xl font-bold text-green-900">支付 +13.4% / 发货 +12.4%</div>
+                          <div className="text-xs text-green-500 mt-1">较 2024 年同量级大促</div>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-blue-500 mt-1">可修改 · 管理层设定</div>
                   </div>
-                )}
-                
-                {/* 自然水位 GMV - 测算前后显示不同内容 */}
-                {calculationStep === 0 && !stepCalculated[0] ? (
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">自然水位 GMV</div>
-                    <div className="text-2xl font-bold text-gray-400">待测算</div>
-                    <div className="text-xs text-gray-500 mt-1">点击开始预测</div>
-                  </div>
-                ) : (
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">自然水位 GMV</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {naturalWaterLevelTotal > 0 ? `${naturalWaterLevelTotal.toLocaleString()}万` : '-'}
+                  
+                  {/* 第二区块：系统预测区 */}
+                  <div>
+                    <div className="text-sm text-gray-500 mb-3 font-medium">系统预测</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* 自然水位 GMV */}
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <div className="text-xs text-gray-500 mb-1">自然水位 GMV</div>
+                        <div className="text-2xl font-bold text-gray-800">
+                          {naturalWaterLevelTotal > 0 ? `${naturalWaterLevelTotal.toLocaleString()}万` : '-'}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">不投预算的预测基线</div>
+                      </div>
+                      
+                      {/* 含预算支付 GMV */}
+                      {stepCalculated[2] && (
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-500 mb-1">含预算支付 GMV</div>
+                          <div className="text-2xl font-bold text-gray-800">12,000万</div>
+                          <div className="text-xs text-gray-400 mt-1">含预算后的预测 GMV 水位</div>
+                        </div>
+                      )}
+                      
+                      {/* 全周期发货 GMV（含 T+2发货率） */}
+                      {stepCalculated[3] && (
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-500 mb-1">全周期发货 GMV</div>
+                          <div className="text-2xl font-bold text-gray-800">8,900万</div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            T+2发货率达标率 95% · 基于发货率模型测算
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 全周期结算 GMV（含结算率） */}
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <div className="text-xs text-gray-500 mb-1">全周期结算 GMV</div>
+                        <div className="text-2xl font-bold text-gray-800">
+                          {Math.round(targetGmv * (settlementRate / 100)).toLocaleString()}万
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          结算率 {settlementRate}% · 基于目标支付 GMV 测算
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">不投预算的预测基线</div>
                   </div>
-                )}
-                
-                {calculationStep >= 2 && (
-                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl p-4 border border-cyan-200">
-                    <div className="text-xs text-cyan-600 mb-1">含预算支付 GMV</div>
-                    <div className="text-2xl font-bold text-cyan-900">12,000万</div>
-                    <div className="text-xs text-cyan-500 mt-1">含预算后的预测 GMV 水位</div>
-                  </div>
-                )}
-                {/* 预测目标差值 (Gap) 卡片 */}
-                {calculationStep >= 2 && (
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
-                    <div className="text-xs text-red-600 mb-1">目标差值 (Gap)</div>
-                    <div className="text-2xl font-bold text-red-700">
-                      {(targetGmv - 12000).toLocaleString()}万
-                    </div>
-                    <div className="text-xs text-red-500 mt-1">
-                      完成率 {Math.round((12000 / targetGmv) * 100)}%
-                    </div>
-                  </div>
-                )}
-                {/* 目标达成概率卡片 */}
-                {calculationStep >= 2 && (
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                    <div className="text-xs text-green-600 mb-1">目标达成概率</div>
-                    <div className="text-2xl font-bold text-green-700">92%</div>
-                    <div className="text-xs text-green-500 mt-1">基于当前预算和历史转化率测算</div>
-                  </div>
-                )}
-                {stepCalculated[3] && (
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
-                    <div className="text-xs text-orange-600 mb-1">总发货 GMV 目标</div>
-                    <div className="text-2xl font-bold text-orange-900">10,550万</div>
-                    <div className="text-xs text-orange-500 mt-1">整体发货/支付比：89.4%</div>
-                  </div>
-                )}
-                {calculationStep >= 4 && (
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                    <div className="text-xs text-purple-600 mb-1">06/18 BigDay 核心指标</div>
-                    <div className="text-lg font-bold text-purple-900">支付 5,507万 / 发货 8,138万</div>
-                    <div className="text-xs text-purple-500 mt-1">当日占全周期比重：支付 46.7% / 发货 77.1%</div>
-                  </div>
-                )}
-                {calculationStep >= 4 && (
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                    <div className="text-xs text-green-600 mb-1">整体同比增速</div>
-                    <div className="text-2xl font-bold text-green-900">支付 +13.4% / 发货 +12.4%</div>
-                    <div className="text-xs text-green-500 mt-1">较 2024 年同量级大促</div>
-                  </div>
-                )}
-                {calculationStep === 0 && !stepCalculated[0] && (
-                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200">
-                    <div className="text-xs text-indigo-600 mb-1">待预测</div>
-                    <div className="text-2xl font-bold text-indigo-900">-</div>
-                    <div className="text-xs text-indigo-500 mt-1">点击开始预测</div>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
 
               {/* 图表展示区域 - 根据步骤联动 */}
               <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
@@ -7482,11 +7942,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                     {calculationStep === 0 && '大盘GMV分日预测·自然水位'}
-                    {calculationStep === 1 && '大盘GMV分日预测·目标设定'}
+                    {calculationStep === 1 && !stepCalculated[1] && '大盘GMV分日预测·自然水位'}
+                    {calculationStep === 1 && stepCalculated[1] && '大盘GMV分日预测·目标设定'}
                     {calculationStep === 2 && (showBudgetChart ? '大盘GMV分日预测·含预算' : '大盘GMV分日预测·目标设定')}
                     {calculationStep >= 3 && '大盘GMV分日预测·完整视图'}
                     {/* 业务说明tooltip */}
-                    {calculationStep === 1 && (
+                    {calculationStep === 1 && stepCalculated[1] && (
                       <div className="relative group">
                         <div className="cursor-help text-gray-400 hover:text-gray-600">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7501,26 +7962,27 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   </h3>
                   <div className="flex items-center gap-3">
                     {/* 只在测算后显示自然水位支付GMV图例 */}
-                    {(calculationStep > 0 || (calculationStep === 0 && stepCalculated[0])) && (
+                    {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
                       <span className="flex items-center gap-1 text-xs text-blue-600"><span className="w-3 h-0.5 bg-blue-500 inline-block"></span> 自然水位支付GMV</span>
                     )}
-                    <span className="flex items-center gap-1 text-xs text-purple-600"><span className="w-3 h-0.5 bg-purple-500 inline-block" style={{borderTop: '2px dashed #8B5CF6'}}></span> 历史参考水位</span>
-                    {/* 步骤2及之后显示等比加压参考线 */}
-                    {calculationStep >= 1 && (
+                    <span className="flex items-center gap-1 text-xs text-purple-600"><span className="w-3 h-0.5 bg-purple-500 inline-block" style={{borderTop: '2px dashed #8B5CF6'}}></span> 历史大促参考水位</span>
+                    {/* 步骤2测算完成后显示等比加压目标参考线 */}
+                    {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
                       <span className="flex items-center gap-1 text-xs text-orange-500">
                         <span className="w-3 h-0.5 bg-orange-500 inline-block" style={{borderTop: '2px dashed #F97316'}}></span> 
-                        等比加压参考线
+                        等比加压目标参考线
                       </span>
                     )}
                     {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-green-600"><span className="w-3 h-0.5 bg-green-500 inline-block"></span> 含预算预测支付GMV</span>}
+                    {stepCalculated[2] && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-teal-600"><span className="w-3 h-0.5 bg-teal-500 inline-block" style={{borderTop: '2px dashed #14B8A6'}}></span> 含预算预测结算GMV</span>}
                     {calculationStep >= 3 && <span className="flex items-center gap-1 text-xs text-orange-500"><span className="w-3 h-0.5 bg-orange-500 inline-block"></span> 含预算预测发货GMV</span>}
                   </div>
                 </div>
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={
-                      calculationStep === 0 && !stepCalculated[0] ?
-                        // Step1未测算时，只显示历史参考数据
+                      (calculationStep === 0 && !stepCalculated[0]) || (calculationStep === 1 && !stepCalculated[1]) ?
+                        // Step1未测算时或Step2刚进入未测算时，只显示历史参考数据
                         currentConfig.waterLevelChart.map(w => ({ day: w.day, topDown: w.topDown })) :
                       calculationStep === 0 && naturalWaterLevelData.length > 0 ? 
                         naturalWaterLevelData.map((d, i) => ({
@@ -7528,8 +7990,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           natural: d.value,
                           topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
                         })) :
-                      calculationStep === 1 && fullCycleTargets.length > 0 && naturalWaterLevelData.length > 0 ?
-                        // Step2：显示自然水位 + 等比加压参考线
+                      calculationStep === 1 && stepCalculated[1] && fullCycleTargets.length > 0 && naturalWaterLevelData.length > 0 ?
+                        // Step2测算完成：显示自然水位 + 等比加压目标参考线
                         naturalWaterLevelData.map((d, i) => {
                           const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
                           return {
@@ -7540,7 +8002,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           };
                         }) :
                       calculationStep === 2 && !showBudgetChart ?
-                        // Step3初始状态：显示自然水位 + 等比加压参考线
+                        // Step3初始状态：显示自然水位 + 等比加压目标参考线
                         naturalWaterLevelData.map((d, i) => {
                           const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
                           return {
@@ -7551,15 +8013,21 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           };
                         }) :
                       (calculationStep === 2 && showBudgetChart || calculationStep >= 2) && dailyGmvTargets.length > 0 ?
-                        // Step3点击按钮后或Step3+，显示完整数据 + 等比加压参考线
+                        // Step3点击按钮后或Step3+，显示完整数据 + 等比加压目标参考线
                         dailyGmvTargets.map((d, i) => {
                           const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
                           const baseValue = naturalWaterLevelData[i]?.value || Math.round(d.manualTarget * 0.77);
+                          // 结算率根据日期类型调整：工作日约85%，周末约84%，大促日略高约88%
+                          const isBigDay = i === 3; // 假设第4天是大促日
+                          const isWeekend = i === 0 || i === 5; // 假设第1和第6天是周末
+                          const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
                           return {
                             day: d.date.split('-').slice(1).join('/'),
                             natural: Math.round(d.manualTarget * 0.77),
                             withBudget: d.manualTarget,
                             withBudgetShip: deliveryGmvData.find(dd => dd.date === d.date)?.value || Math.round(d.manualTarget * 0.71),
+                            settlement: Math.round(d.manualTarget * settlementRate),
+                            settlementRate: settlementRate,
                             topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
                             amplified: Math.round(baseValue * (1 + growthRate)),
                           };
@@ -7573,12 +8041,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <YAxis tick={{ fontSize: 11 }} unit="万" />
                       <Tooltip />
                       {/* 只在测算后显示自然水位支付GMV线 */}
-                      {(calculationStep > 0 || (calculationStep === 0 && stepCalculated[0])) && (
+                      {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
                         <Line type="monotone" dataKey="natural" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="自然水位支付GMV" />
                       )}
-                      <Line type="monotone" dataKey="topDown" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="历史参考水位" />
-                      {/* 步骤2及之后显示等比加压参考线 */}
-                      {calculationStep >= 1 && (
+                      <Line type="monotone" dataKey="topDown" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="历史大促参考水位" />
+                      {/* 步骤2测算完成后显示等比加压目标参考线 */}
+                      {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
                         <Line 
                           type="monotone" 
                           dataKey="amplified" 
@@ -7586,539 +8054,177 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           strokeWidth={2} 
                           strokeDasharray="5 5" 
                           dot={{ r: 3 }} 
-                          name="等比加压参考线" 
+                          name="等比加压目标参考线" 
                         />
                       )}
                       {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="withBudget" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="含预算预测支付GMV" />}
                       {stepCalculated[3] && <Line type="monotone" dataKey="withBudgetShip" stroke="#F97316" strokeWidth={2} dot={{ r: 3 }} name="含预算预测发货GMV" />}
+                      {stepCalculated[2] && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="settlement" stroke="#14B8A6" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} name="含预算预测结算GMV" />}
                       <Legend />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* 第二个图表：发货GMV分日预测 - 只在步骤3及之后显示 */}
-              {calculationStep >= 3 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                      发货GMV分日预测 · 含预算
-                    </h3>
-                    {/* 行业下拉选择器 */}
-                    <div className="relative" ref={industryDropdownRef}>
-                      <button 
-                        onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs transition-colors border border-gray-300"
-                      >
-                        <span>行业选择</span>
-                        <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${showIndustryDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {showIndustryDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 min-w-[180px]">
-                          <div className="p-2">
-                            {/* 全选/取消全选按钮 */}
-                            <div className="px-3 py-1 flex items-center justify-between border-b border-gray-100">
-                              <span className="text-xs text-gray-500">行业列表</span>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (selectedIndustries.includes('大盘')) {
-                                    setSelectedIndustries(['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他']);
-                                  } else if (selectedIndustries.length === 6) {
-                                    setSelectedIndustries([]);
-                                  } else {
-                                    setSelectedIndustries(['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他']);
-                                  }
-                                }}
-                                className="text-xs text-blue-600 hover:text-blue-800"
-                              >
-                                {selectedIndustries.length === 6 ? '取消全选' : '全选分行业'}
-                              </button>
-                            </div>
-                            
-                            {industryList.map(industry => (
-                              <label key={industry} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedIndustries.includes(industry)}
-                                  onChange={(e) => {
-                                    if (industry === '大盘') {
-                                      // 选择大盘时，取消其他行业
-                                      setSelectedIndustries(e.target.checked ? ['大盘'] : []);
-                                    } else {
-                                      if (e.target.checked) {
-                                        // 选择具体行业时，取消大盘
-                                        const newSelected = selectedIndustries.filter(i => i !== '大盘');
-                                        setSelectedIndustries([...newSelected, industry]);
-                                      } else {
-                                        setSelectedIndustries(selectedIndustries.filter(i => i !== industry));
-                                      }
-                                    }
-                                  }}
-                                  className="w-3.5 h-3.5 text-blue-600 rounded"
-                                />
-                                <span className="text-xs text-gray-700">{industry}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={calculateIndustryChartData()}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} unit="万" />
-                      <Tooltip
-                        content={({ active, payload, label }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
-                                <p className="font-bold text-gray-800 mb-2">{label}</p>
-                                {payload.map((entry: any, index: number) => (
-                                  <p key={index} className="flex items-center gap-2">
-                                    <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
-                                    <span className="text-gray-600">{entry.name}：</span>
-                                    <span className="font-bold text-gray-900">{entry.value}</span>
-                                    <span className="text-gray-500">万</span>
-                                  </p>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
-                      {selectedIndustries.map(industry => (
-                        <Line 
-                          key={industry}
-                          type="monotone" 
-                          dataKey={industry} 
-                          stroke={industryColors[industry]} 
-                          strokeWidth={2} 
-                          dot={{ r: 3 }} 
-                          name={`${industry}-发货GMV`} 
-                        />
-                      ))}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-                </div>
-              )}
-
-              {/* 第三个表格：分行业GMV全周期预测 - 只在步骤3及之后显示 */}
-              {calculationStep >= 3 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <h3 className="font-bold text-sm text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                  分行业GMV全周期预测·含预算
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600 font-medium">
-                      <tr>
-                        <th className="text-left py-3 px-4">行业</th>
-                        <th className="text-right py-3 px-4">支付 GMV（万）</th>
-                        <th className="text-right py-3 px-4">占比</th>
-                        <th className="text-right py-3 px-4">发货 GMV（万）</th>
-                        <th className="text-right py-3 px-4">发货/支付比</th>
-                        <th className="text-right py-3 px-4">同比增速</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">3C数码</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">3,200</td>
-                        <td className="py-3 px-4 text-right text-gray-600">27.1%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">2,880</td>
-                        <td className="py-3 px-4 text-right text-gray-600">90.0%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+15.2%</td>
-                      </tr>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">家电</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">2,450</td>
-                        <td className="py-3 px-4 text-right text-gray-600">20.8%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">2,280</td>
-                        <td className="py-3 px-4 text-right text-gray-600">93.1%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+11.8%</td>
-                      </tr>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">服饰</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">2,100</td>
-                        <td className="py-3 px-4 text-right text-gray-600">17.8%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">1,720</td>
-                        <td className="py-3 px-4 text-right text-gray-600">81.9%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+8.5%</td>
-                      </tr>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">食品快消</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">1,850</td>
-                        <td className="py-3 px-4 text-right text-gray-600">15.7%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">1,760</td>
-                        <td className="py-3 px-4 text-right text-gray-600">95.1%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+13.4%</td>
-                      </tr>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">美妆个护</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">1,380</td>
-                        <td className="py-3 px-4 text-right text-gray-600">11.7%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">1,200</td>
-                        <td className="py-3 px-4 text-right text-gray-600">87.0%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+10.2%</td>
-                      </tr>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">其他</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">820</td>
-                        <td className="py-3 px-4 text-right text-gray-600">6.9%</td>
-                        <td className="py-3 px-4 text-right font-bold text-gray-900">710</td>
-                        <td className="py-3 px-4 text-right text-gray-600">86.6%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+6.8%</td>
-                      </tr>
-                      <tr className="bg-gray-50 font-bold">
-                        <td className="py-3 px-4 text-gray-800">合计</td>
-                        <td className="py-3 px-4 text-right text-gray-900">11,800</td>
-                        <td className="py-3 px-4 text-right text-gray-600">100%</td>
-                        <td className="py-3 px-4 text-right text-gray-900">10,550</td>
-                        <td className="py-3 px-4 text-right text-gray-600">89.4%</td>
-                        <td className="py-3 px-4 text-right text-green-600">+12.4%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                </div>
-              )}
-
-              {/* Step5 测算结果输出 - 可视化图表区（仅在步骤4之后显示） */}
-              {calculationStep >= 4 && (
+              {/* Step5 测算结果输出 - 联动下钻仪表盘（仅在步骤4之后显示） */}
+              {stepCalculated[3] && (
                 <div className="mt-6">
-                  {/* 图表区域标题和Tab切换 */}
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      测算结果可视化
-                    </h3>
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                      <button
-                        onClick={() => setResultChartTab('overview')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultChartTab === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        大盘概览
-                      </button>
-                      <button
-                        onClick={() => setResultChartTab('phase')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultChartTab === 'phase' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        阶段拆解
-                      </button>
-                      <button
-                        onClick={() => setResultChartTab('delivery')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultChartTab === 'delivery' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        发货节奏
-                      </button>
-                      <button
-                        onClick={() => setResultChartTab('session')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultChartTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        场次效果
-                      </button>
-                      <button
-                        onClick={() => setResultChartTab('industry')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultChartTab === 'industry' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        行业结构
-                      </button>
+                  {/* 左右分栏布局 - 主图表区 + 结构下钻面板 */}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    {/* 左侧：主图表区（占据约 2/3 宽度） */}
+                    <div className="xl:col-span-2">
+                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                              发货GMV分日趋势
+                            </h3>
+                            {/* 行业下拉选择器 */}
+                            {stepCalculated[4] && (
+                              <select
+                                value={selectedDashboardIndustry}
+                                onChange={(e) => {
+                                  setSelectedDashboardIndustry(e.target.value);
+                                  setSelectedPoint({}); // 切换行业时重置选中点
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs transition-colors border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="total">大盘</option>
+                                <option value="3c">3C数码</option>
+                                <option value="home">家电</option>
+                                <option value="beauty">美妆个护</option>
+                              </select>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">💡 点击图中数据点可查看详情</p>
+                        </div>
+                        <div className="h-52">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={dashboardMockData[selectedDashboardIndustry]?.xAxis.map(date => {
+                              const dataPoint: any = { day: date };
+                              dashboardMockData[selectedDashboardIndustry].series.forEach(series => {
+                                const point = series.trendData.find(d => d.date === date);
+                                dataPoint[series.name] = point ? point.value : null;
+                              });
+                              return dataPoint;
+                            }) || []}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                              <YAxis tick={{ fontSize: 11 }} unit="万" />
+                              <Tooltip
+                                content={({ active, payload, label }) => {
+                                  if (active && payload && payload.length) {
+                                    return (
+                                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
+                                        <p className="font-bold text-gray-800 mb-2">{label}</p>
+                                        {payload.map((entry: any, index: number) => (
+                                          <p key={index} className="flex items-center gap-2">
+                                            <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
+                                            <span className="text-gray-600">{entry.name}：</span>
+                                            <span className="font-bold text-gray-900">{entry.value}</span>
+                                            <span className="text-gray-500">万</span>
+                                          </p>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
+                              {dashboardMockData[selectedDashboardIndustry]?.series.map((series) => (
+                                <Line 
+                                  key={series.name}
+                                  type="monotone" 
+                                  dataKey={series.name} 
+                                  stroke={series.color}
+                                  strokeWidth={series.isMain ? 3 : 1.5}
+                                  strokeDasharray={series.isMain ? undefined : '5 5'}
+                                  dot={{ 
+                                    r: series.isMain ? 4 : 2, 
+                                    strokeWidth: series.isMain ? 2 : 1,
+                                    fill: '#fff',
+                                    cursor: 'pointer'
+                                  }} 
+                                  activeDot={{ r: 6, strokeWidth: 3 }}
+                                  name={series.name}
+                                />
+                              ))}
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* 大盘概览图表 */}
-                    {resultChartTab === 'overview' && (
-                      <>
-                        {/* 左图：大盘GMV分日预测（已有） */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-sm text-gray-800">大盘GMV分日预测·完整视图</h4>
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1 text-xs text-blue-600"><span className="w-3 h-0.5 bg-blue-500 inline-block"></span> 自然水位支付GMV</span>
-                              <span className="flex items-center gap-1 text-xs text-purple-600"><span className="w-3 h-0.5 bg-purple-500 inline-block" style={{borderTop: '2px dashed #8B5CF6'}}></span> 历史参考水位</span>
-                              <span className="flex items-center gap-1 text-xs text-green-600"><span className="w-3 h-0.5 bg-green-500 inline-block"></span> 含预算预测支付GMV</span>
-                              <span className="flex items-center gap-1 text-xs text-orange-500"><span className="w-3 h-0.5 bg-orange-500 inline-block"></span> 含预算预测发货GMV</span>
-                            </div>
-                          </div>
-                          <div className="h-52">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <ComposedChart data={dailyGmvTargets.map((d, i) => ({
-                                day: d.date.split('-').slice(1).join('/'),
-                                natural: Math.round(d.manualTarget * 0.77),
-                                withBudget: d.manualTarget,
-                                withBudgetShip: deliveryGmvData.find(dd => dd.date === d.date)?.value || Math.round(d.manualTarget * 0.71),
-                                topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
-                              }))}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} unit="万" />
-                                <Tooltip />
-                                <Line type="monotone" dataKey="natural" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="自然水位支付GMV" />
-                                <Line type="monotone" dataKey="topDown" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="历史参考水位" />
-                                <Line type="monotone" dataKey="withBudget" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="含预算预测支付GMV" />
-                                <Line type="monotone" dataKey="withBudgetShip" stroke="#F97316" strokeWidth={2} dot={{ r: 3 }} name="含预算预测发货GMV" />
-                                <Legend />
-                              </ComposedChart>
-                            </ResponsiveContainer>
-                          </div>
+                    
+                    {/* 右侧：结构下钻面板（占据约 1/3 宽度） */}
+                    <div className="xl:col-span-1">
+                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm h-full">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-bold text-sm text-gray-800">
+                            {getRightPanelData(selectedPoint).title}
+                          </h4>
+                          {selectedPoint.date && (
+                            <button 
+                              onClick={() => setSelectedPoint({})}
+                              className="text-xs text-gray-500 hover:text-gray-700"
+                            >
+                              重置
+                            </button>
+                          )}
                         </div>
                         
-                        {/* 右图：发货GMV分日预测（已有） */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                          <h4 className="font-bold text-sm text-gray-800 mb-3">发货GMV分日预测·含预算</h4>
-                          <div className="h-52">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <ComposedChart data={calculateIndustryChartData()}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} unit="万" />
-                                <Tooltip />
-                                <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
-                                {selectedIndustries.map(industry => (
-                                  <Line 
-                                    key={industry}
-                                    type="monotone" 
-                                    dataKey={industry} 
-                                    stroke={industryColors[industry]} 
-                                    strokeWidth={2} 
-                                    dot={{ r: 3 }} 
-                                    name={`${industry}-发货GMV`} 
-                                  />
-                                ))}
-                              </ComposedChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* 分阶段行业目标拆解 - 堆叠柱状图 */}
-                    {resultChartTab === 'phase' && (
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm lg:col-span-2">
-                        <h4 className="font-bold text-sm text-gray-800 mb-3">分阶段行业目标拆解·堆叠柱状图</h4>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[
-                              { name: '预热期', '3C数码_支付': 960, '家电_支付': 735, '服饰_支付': 630, '食品快消_支付': 555, '美妆个护_支付': 414, '其他_支付': 246, '3C数码_发货': 778, '家电_发货': 689, '服饰_发货': 467, '食品快消_发货': 527, '美妆个护_发货': 360, '其他_发货': 213 },
-                              { name: '爆发期', '3C数码_支付': 1440, '家电_支付': 1103, '服饰_支付': 945, '食品快消_支付': 833, '美妆个护_支付': 621, '其他_支付': 368, '3C数码_发货': 1944, '家电_发货': 1242, '服饰_发货': 972, '食品快消_发货': 792, '美妆个护_发货': 843, '其他_发货': 319 },
-                              { name: '返场期', '3C数码_支付': 800, '家电_支付': 612, '服饰_支付': 525, '食品快消_支付': 463, '美妆个护_支付': 345, '其他_支付': 205, '3C数码_发货': 158, '家电_发货': 349, '服饰_发货': 281, '食品快消_发货': 441, '美妆个护_发货': 0, '其他_发货': 178 }
-                            ]}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                              <YAxis tick={{ fontSize: 11 }} unit="万" />
-                              <Tooltip />
-                              <Legend wrapperStyle={{ fontSize: '11px' }} />
-                              {/* 支付目标堆叠 */}
-                              <Bar dataKey="3C数码_支付" stackId="pay" fill="#3B82F6" name="3C数码(支付)" />
-                              <Bar dataKey="家电_支付" stackId="pay" fill="#6366F1" name="家电(支付)" />
-                              <Bar dataKey="服饰_支付" stackId="pay" fill="#8B5CF6" name="服饰(支付)" />
-                              <Bar dataKey="食品快消_支付" stackId="pay" fill="#A78BFA" name="食品快消(支付)" />
-                              <Bar dataKey="美妆个护_支付" stackId="pay" fill="#C4B5FD" name="美妆个护(支付)" />
-                              <Bar dataKey="其他_支付" stackId="pay" fill="#DDD6FE" name="其他(支付)" />
-                              {/* 发货目标堆叠 */}
-                              <Bar dataKey="3C数码_发货" stackId="delivery" fill="#10B981" name="3C数码(发货)" />
-                              <Bar dataKey="家电_发货" stackId="delivery" fill="#34D399" name="家电(发货)" />
-                              <Bar dataKey="服饰_发货" stackId="delivery" fill="#6EE7B7" name="服饰(发货)" />
-                              <Bar dataKey="食品快消_发货" stackId="delivery" fill="#A7F3D0" name="食品快消(发货)" />
-                              <Bar dataKey="美妆个护_发货" stackId="delivery" fill="#D1FAE5" name="美妆个护(发货)" />
-                              <Bar dataKey="其他_发货" stackId="delivery" fill="#ECFDF5" name="其他(发货)" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="mt-3 text-xs text-gray-500 text-center">
-                          注：左侧为支付目标堆叠，右侧为发货目标堆叠，可直观对比各阶段不同行业的贡献占比
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 行业发货节奏健康度 - 堆叠条形图 */}
-                    {resultChartTab === 'delivery' && (
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm lg:col-span-2">
-                        <h4 className="font-bold text-sm text-gray-800 mb-3">行业发货节奏健康度·堆叠条形图</h4>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart layout="vertical" data={[
-                              { name: '3C数码', T0: 30, T1: 50, T2: 15, T3_plus: 5, warning: false },
-                              { name: '家电', T0: 20, T1: 45, T2: 25, T3_plus: 10, warning: false },
-                              { name: '服饰', T0: 25, T1: 35, T2: 30, T3_plus: 10, warning: false },
-                              { name: '食品快消', T0: 40, T1: 40, T2: 15, T3_plus: 5, warning: false },
-                              { name: '美妆个护', T0: 35, T1: 40, T2: 20, T3_plus: 5, warning: false },
-                              { name: '其他', T0: 30, T1: 45, T2: 20, T3_plus: 5, warning: false }
-                            ]}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis type="number" tick={{ fontSize: 11 }} unit="%" />
-                              <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} />
-                              <Tooltip formatter={(value) => `${value}%`} />
-                              <Legend wrapperStyle={{ fontSize: '11px' }} />
-                              <Bar dataKey="T0" stackId="a" fill="#10B981" name="T0发货" />
-                              <Bar dataKey="T1" stackId="a" fill="#3B82F6" name="T1发货" />
-                              <Bar dataKey="T2" stackId="a" fill="#F59E0B" name="T2发货" />
-                              <Bar dataKey="T3_plus" stackId="a" fill="#EF4444" name="T3+发货" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="mt-3 text-xs text-gray-500 text-center">
-                          注：T0为当日发货，T1为次日发货，T2为第三日发货，T3+为第四日及以后发货。T3+占比超过10%标红提示压单风险
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 场次带动效果对比 - 分组柱状图 */}
-                    {resultChartTab === 'session' && (
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm lg:col-span-2">
-                        <h4 className="font-bold text-sm text-gray-800 mb-3">场次带动效果对比·分组柱状图</h4>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[
-                              { name: '06/16 3C品类日', expected: 1.3, actual: 1.32, delta: 2, gmv: 280 },
-                              { name: '06/17 美妆品类日', expected: 1.2, actual: 1.25, delta: 5, gmv: 190 },
-                              { name: '06/18 全品类爆发', expected: 1.3, actual: 1.38, delta: 8, gmv: 1250 },
-                              { name: '06/19 服饰返场日', expected: 1.15, actual: 1.13, delta: -2, gmv: 80 }
-                            ]}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis dataKey="name" tick={{ fontSize: 10, width: 100 }} />
-                              <YAxis tick={{ fontSize: 11 }} />
-                              <Tooltip formatter={(value, name) => name === 'gmv' ? `${value}万` : value} />
-                              <Legend wrapperStyle={{ fontSize: '11px' }} />
-                              <Bar dataKey="expected" fill="#94A3B8" name="预期带动系数" />
-                              <Bar dataKey="actual" fill="#3B82F6" name="实际带动系数" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="mt-3 text-xs text-gray-500 text-center">
-                          注：实际带动系数与预期差值超过±10%标红提示配置不合理
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 二级行业目标结构 - 环形图 */}
-                    {resultChartTab === 'industry' && (
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm lg:col-span-2">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-bold text-sm text-gray-800">二级行业目标结构·环形图</h4>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">选择一级行业：</span>
-                            <select 
-                              value={selectedIndustryForDonut}
-                              onChange={(e) => setSelectedIndustryForDonut(e.target.value)}
-                              className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="3C数码">3C数码</option>
-                              <option value="家电">家电</option>
-                              <option value="服饰">服饰</option>
-                              <option value="食品快消">食品快消</option>
-                              <option value="美妆个护">美妆个护</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="h-64">
+                        <div className="space-y-4">
+                          {/* 环形图 */}
+                          <div className="h-48">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
-                                  data={selectedIndustryForDonut === '3C数码' 
-                                    ? [
-                                        { name: '手机', value: 1600, color: '#3B82F6' },
-                                        { name: '电脑整机', value: 960, color: '#6366F1' },
-                                        { name: '数码配件', value: 640, color: '#8B5CF6' }
-                                      ] : selectedIndustryForDonut === '家电'
-                                      ? [
-                                          { name: '大家电', value: 1225, color: '#10B981' },
-                                          { name: '小家电', value: 735, color: '#34D399' },
-                                          { name: '厨房电器', value: 490, color: '#6EE7B7' }
-                                        ] : selectedIndustryForDonut === '服饰'
-                                          ? [
-                                              { name: '女装', value: 1050, color: '#EC4899' },
-                                              { name: '男装', value: 525, color: '#F472B6' },
-                                              { name: '鞋靴', value: 525, color: '#F9A8D4' }
-                                            ] : selectedIndustryForDonut === '食品快消'
-                                              ? [
-                                                  { name: '休闲食品', value: 740, color: '#F59E0B' },
-                                                  { name: '饮料', value: 555, color: '#FBBF24' },
-                                                  { name: '生鲜', value: 555, color: '#FDE68A' }
-                                                ] : [
-                                                    { name: '护肤品', value: 621, color: '#8B5CF6' },
-                                                    { name: '彩妆', value: 483, color: '#A78BFA' },
-                                                    { name: '个护', value: 276, color: '#C4B5FD' }
-                                                  ]
-                                  }
+                                  data={getRightPanelData(selectedPoint).children}
                                   cx="50%"
                                   cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={90}
+                                  innerRadius={50}
+                                  outerRadius={75}
                                   paddingAngle={5}
                                   dataKey="value"
                                 >
-                                  {selectedIndustryForDonut === '3C数码' 
-                                    ? [
-                                        { name: '手机', value: 1600, color: '#3B82F6' },
-                                        { name: '电脑整机', value: 960, color: '#6366F1' },
-                                        { name: '数码配件', value: 640, color: '#8B5CF6' }
-                                      ].map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                      )) : selectedIndustryForDonut === '家电'
-                                        ? [
-                                            { name: '大家电', value: 1225, color: '#10B981' },
-                                            { name: '小家电', value: 735, color: '#34D399' },
-                                            { name: '厨房电器', value: 490, color: '#6EE7B7' }
-                                          ].map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                          )) : selectedIndustryForDonut === '服饰'
-                                            ? [
-                                                { name: '女装', value: 1050, color: '#EC4899' },
-                                                { name: '男装', value: 525, color: '#F472B6' },
-                                                { name: '鞋靴', value: 525, color: '#F9A8D4' }
-                                              ].map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                              )) : selectedIndustryForDonut === '食品快消'
-                                                ? [
-                                                    { name: '休闲食品', value: 740, color: '#F59E0B' },
-                                                    { name: '饮料', value: 555, color: '#FBBF24' },
-                                                    { name: '生鲜', value: 555, color: '#FDE68A' }
-                                                  ].map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                  )) : [
-                                                      { name: '护肤品', value: 621, color: '#8B5CF6' },
-                                                      { name: '彩妆', value: 483, color: '#A78BFA' },
-                                                      { name: '个护', value: 276, color: '#C4B5FD' }
-                                                    ].map((entry, index) => (
-                                                      <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))
-                                  }
+                                  {getRightPanelData(selectedPoint).children.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
                                 </Pie>
                                 <Tooltip formatter={(value) => `${value}万`} />
-                                <Legend formatter={(value) => <span style={{ fontSize: '11px' }}>{value}</span>} />
+                                <Legend formatter={(value) => <span style={{ fontSize: '10px' }}>{value}</span>} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
-                          <div className="flex items-center justify-center">
-                            <div className="text-center">
-                              <div className="text-sm text-gray-600 mb-1">一级行业</div>
-                              <div className="text-2xl font-bold text-gray-900">{selectedIndustryForDonut}</div>
-                              <div className="text-lg text-gray-700 mt-2">
-                                支付 GMV：{selectedIndustryForDonut === '3C数码' ? '3,200万' : selectedIndustryForDonut === '家电' ? '2,450万' : selectedIndustryForDonut === '服饰' ? '2,100万' : selectedIndustryForDonut === '食品快消' ? '1,850万' : '1,380万'}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                点击环形扇区可跳转至对应二级行业明细数据
-                              </div>
+                          
+                          {/* 总 GMV 显示 */}
+                          <div className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
+                            <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
+                            <p className="text-xl font-bold text-gray-900">{getRightPanelData(selectedPoint).totalGmv.toLocaleString()}万</p>
+                          </div>
+                          
+                          {/* 二级行业数据列表 */}
+                          <div>
+                            <p className="text-xs text-gray-600 mb-2">行业明细：</p>
+                            <div className="space-y-2">
+                              {getRightPanelData(selectedPoint).children.map((item, index) => (
+                                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                    <span className="text-xs font-medium text-gray-800">{item.name}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-xs font-bold text-gray-900">{item.value.toLocaleString()}万</span>
+                                    <span className="text-xs text-gray-500 ml-2">({item.ratio})</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -8126,12 +8232,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               {/* Step5 测算结果输出 - 明细表格区（仅在步骤4之后显示） */}
               {calculationStep >= 4 && (
                 <div className="mt-6">
-                  {/* 表格区域标题和Tab切换 */}
+                  {/* 表格区域Tab切换 */}
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      测算结果明细
-                    </h3>
                     <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
                       <button
                         onClick={() => setResultTableTab('industry')}
@@ -8196,54 +8298,16 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">3C数码</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">3,200</td>
-                                <td className="py-3 px-4 text-right text-gray-600">27.1%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">2,880</td>
-                                <td className="py-3 px-4 text-right text-gray-600">90.0%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+15.2%</td>
-                              </tr>
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">家电</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">2,450</td>
-                                <td className="py-3 px-4 text-right text-gray-600">20.8%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">2,280</td>
-                                <td className="py-3 px-4 text-right text-gray-600">93.1%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+11.8%</td>
-                              </tr>
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">服饰</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">2,100</td>
-                                <td className="py-3 px-4 text-right text-gray-600">17.8%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">1,720</td>
-                                <td className="py-3 px-4 text-right text-gray-600">81.9%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+8.5%</td>
-                              </tr>
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">食品快消</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">1,850</td>
-                                <td className="py-3 px-4 text-right text-gray-600">15.7%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">1,760</td>
-                                <td className="py-3 px-4 text-right text-gray-600">95.1%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+13.4%</td>
-                              </tr>
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">美妆个护</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">1,380</td>
-                                <td className="py-3 px-4 text-right text-gray-600">11.7%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">1,200</td>
-                                <td className="py-3 px-4 text-right text-gray-600">87.0%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+10.2%</td>
-                              </tr>
-                              <tr className="hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium text-gray-900">其他</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">820</td>
-                                <td className="py-3 px-4 text-right text-gray-600">6.9%</td>
-                                <td className="py-3 px-4 text-right font-bold text-gray-900">710</td>
-                                <td className="py-3 px-4 text-right text-gray-600">86.6%</td>
-                                <td className="py-3 px-4 text-right text-green-600">+6.8%</td>
-                              </tr>
+                              {industryTableData.map((item) => (
+                                <tr key={item.name} className="hover:bg-gray-50">
+                                  <td className="py-3 px-4 font-medium text-gray-900">{item.name}</td>
+                                  <td className="py-3 px-4 text-right font-bold text-gray-900">{item.payGmv.toLocaleString()}</td>
+                                  <td className="py-3 px-4 text-right text-gray-600">{item.percentage}%</td>
+                                  <td className="py-3 px-4 text-right font-bold text-gray-900">{item.deliveryGmv.toLocaleString()}</td>
+                                  <td className="py-3 px-4 text-right text-gray-600">{item.ratio}%</td>
+                                  <td className="py-3 px-4 text-right text-green-600">+{item.growth}%</td>
+                                </tr>
+                              ))}
                               <tr className="bg-gray-50 font-bold">
                                 <td className="py-3 px-4 text-gray-800">合计</td>
                                 <td className="py-3 px-4 text-right text-gray-900">11,800</td>
@@ -8544,6 +8608,34 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <td className="py-3 px-4 text-right font-bold">945</td>
                                 <td className="py-3 px-4 text-right font-bold">972</td>
                               </tr>
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4 font-medium text-gray-900">06/19</td>
+                                <td className="py-3 px-4 text-center text-gray-600">返场期</td>
+                                <td className="py-3 px-4 text-right font-bold">2,845</td>
+                                <td className="py-3 px-4 text-right font-bold">6,230</td>
+                                <td className="py-3 px-4 text-right">750</td>
+                                <td className="py-3 px-4 text-right">1,800</td>
+                                <td className="py-3 px-4 text-right">320</td>
+                                <td className="py-3 px-4 text-right">850</td>
+                                <td className="py-3 px-4 text-right">580</td>
+                                <td className="py-3 px-4 text-right">1,560</td>
+                                <td className="py-3 px-4 text-right">490</td>
+                                <td className="py-3 px-4 text-right">1,240</td>
+                              </tr>
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4 font-medium text-gray-900">06/20</td>
+                                <td className="py-3 px-4 text-center text-gray-600">返场期</td>
+                                <td className="py-3 px-4 text-right font-bold">1,980</td>
+                                <td className="py-3 px-4 text-right font-bold">4,850</td>
+                                <td className="py-3 px-4 text-right">520</td>
+                                <td className="py-3 px-4 text-right">1,350</td>
+                                <td className="py-3 px-4 text-right">230</td>
+                                <td className="py-3 px-4 text-right">720</td>
+                                <td className="py-3 px-4 text-right">410</td>
+                                <td className="py-3 px-4 text-right">1,180</td>
+                                <td className="py-3 px-4 text-right">340</td>
+                                <td className="py-3 px-4 text-right">920</td>
+                              </tr>
                             </tbody>
                           </table>
                         </div>
@@ -8744,13 +8836,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     <RefreshCw className="w-3.5 h-3.5" />
                     历史参考数据
                   </button>
-                  <button
-                    onClick={() => setReferenceSubTab('target_budget')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${referenceSubTab === 'target_budget' ? 'bg-white text-blue-600 shadow-sm border border-blue-200' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    <Target className="w-3.5 h-3.5" />
-                    目标与预算参考
-                  </button>
+
                   <button
                     onClick={() => setReferenceSubTab('external')}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${referenceSubTab === 'external' ? 'bg-white text-blue-600 shadow-sm border border-blue-200' : 'text-gray-500 hover:text-gray-700'}`}
@@ -9038,6 +9124,134 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <div className="text-xs text-gray-500">说明: 用于结构化预测，重点参考历史分渠道、消费力等级预算消耗结构</div>
                     </div>
                   </div>
+                  
+                  {/* 历史关键参数 */}
+                  <div className="bg-white rounded-xl border border-gray-200 mb-4">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                      <Lightbulb className="w-4 h-4 text-yellow-500" />
+                      <h3 className="font-bold text-sm text-gray-800">历史关键参数</h3>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">数仓获取</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">T+2发货率</div>
+                        <div className="text-xl font-bold text-gray-900">89.8%</div>
+                        <div className="text-xs text-gray-500 mt-1">Big Day峰值 90.2%</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">结算率</div>
+                        <div className="text-xl font-bold text-gray-900">94.2%</div>
+                        <div className="text-xs text-gray-500 mt-1">T+7结算口径</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">增量兑换比</div>
+                        <div className="text-xl font-bold text-purple-600">1:6.8</div>
+                        <div className="text-xs text-gray-500 mt-1">历史最优水位</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">发货GMV/限支付日</div>
+                        <div className="text-xl font-bold text-green-600">92.5%</div>
+                        <div className="text-xs text-gray-500 mt-1">T-2窗口占比</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 预算结构表格 */}
+                  <div className="bg-white rounded-xl border border-gray-200">
+                    <div className="overflow-x-auto">
+                      <div className="inline-block min-w-full">
+                        <table className="w-full text-sm">
+                          <colgroup>
+                            <col className="w-40" />
+                            <col className="w-28" />
+                            <col className="w-24" />
+                            <col className="w-24" />
+                            <col className="w-24" />
+                            <col className="w-24" />
+                            <col className="w-24" />
+                            <col className="w-28" />
+                            <col className="w-24" />
+                            <col className="w-24" />
+                          </colgroup>
+                          <thead className="bg-gray-50">
+                            <tr className="text-gray-600 font-medium">
+                              <th className="sticky left-0 z-20 text-left py-2 px-3 bg-gray-50">预算类型</th>
+                              <th className="sticky left-48 z-20 text-right py-2 px-3 bg-gray-50">全周期消耗(万)</th>
+                              <th className="sticky left-80 z-20 text-right py-2 px-3 bg-gray-50">增量兑换比</th>
+                              <th className="sticky left-108 z-20 text-center py-2 px-3 bg-gray-50 border-l-2 border-gray-200">06/15</th>
+                              <th className="text-center py-2 px-3 bg-gray-50">06/16</th>
+                              <th className="text-center py-2 px-3 bg-gray-50">06/17</th>
+                              <th className="text-center py-2 px-3 bg-red-50">06/18</th>
+                              <th className="text-center py-2 px-3 bg-gray-50">06/19</th>
+                              <th className="text-center py-2 px-3 bg-gray-50">06/20</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            <tr className="hover:bg-gray-50">
+                              <td className="sticky left-0 z-10 py-2 px-3 text-gray-700 bg-white">消费券预算</td>
+                              <td className="sticky left-48 z-10 py-2 px-3 text-right font-medium text-gray-800 bg-white">293</td>
+                              <td className="sticky left-80 z-10 py-2 px-3 text-right text-gray-600 bg-white">3.2</td>
+                              <td className="sticky left-108 z-10 py-2 px-3 text-center text-gray-600 bg-white border-l-2 border-gray-200">36</td>
+                              <td className="py-2 px-3 text-center text-gray-600">39</td>
+                              <td className="py-2 px-3 text-center text-gray-600">44</td>
+                              <td className="py-2 px-3 text-center font-medium text-red-600 bg-red-50">98</td>
+                              <td className="py-2 px-3 text-center text-gray-600">41</td>
+                              <td className="py-2 px-3 text-center text-gray-600">35</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="sticky left-0 z-10 py-2 px-3 text-gray-700 bg-white">追补预算</td>
+                              <td className="sticky left-48 z-10 py-2 px-3 text-right font-medium text-gray-800 bg-white">112</td>
+                              <td className="sticky left-80 z-10 py-2 px-3 text-right text-gray-600 bg-white">2.8</td>
+                              <td className="sticky left-108 z-10 py-2 px-3 text-center text-gray-600 bg-white border-l-2 border-gray-200">13</td>
+                              <td className="py-2 px-3 text-center text-gray-600">15</td>
+                              <td className="py-2 px-3 text-center text-gray-600">17</td>
+                              <td className="py-2 px-3 text-center font-medium text-red-600 bg-red-50">37</td>
+                              <td className="py-2 px-3 text-center text-gray-600">18</td>
+                              <td className="py-2 px-3 text-center text-gray-600">12</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="sticky left-0 z-10 py-2 px-3 text-gray-700 bg-white">领航预算</td>
+                              <td className="sticky left-48 z-10 py-2 px-3 text-right font-medium text-gray-800 bg-white">84</td>
+                              <td className="sticky left-80 z-10 py-2 px-3 text-right text-gray-600 bg-white">3.5</td>
+                              <td className="sticky left-108 z-10 py-2 px-3 text-center text-gray-600 bg-white border-l-2 border-gray-200">10</td>
+                              <td className="py-2 px-3 text-center text-gray-600">11</td>
+                              <td className="py-2 px-3 text-center text-gray-600">13</td>
+                              <td className="py-2 px-3 text-center font-medium text-red-600 bg-red-50">28</td>
+                              <td className="py-2 px-3 text-center text-gray-600">14</td>
+                              <td className="py-2 px-3 text-center text-gray-600">8</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="sticky left-0 z-10 py-2 px-3 text-gray-700 bg-white">其他预算</td>
+                              <td className="sticky left-48 z-10 py-2 px-3 text-right font-medium text-gray-800 bg-white">209</td>
+                              <td className="sticky left-80 z-10 py-2 px-3 text-right text-gray-600 bg-white">-</td>
+                              <td className="sticky left-108 z-10 py-2 px-3 text-center text-gray-600 bg-white border-l-2 border-gray-200">26</td>
+                              <td className="py-2 px-3 text-center text-gray-600">27</td>
+                              <td className="py-2 px-3 text-center text-gray-600">31</td>
+                              <td className="py-2 px-3 text-center font-medium text-red-600 bg-red-50">72</td>
+                              <td className="py-2 px-3 text-center text-gray-600">25</td>
+                              <td className="py-2 px-3 text-center text-gray-600">28</td>
+                            </tr>
+                          </tbody>
+                          <tfoot className="bg-gray-50">
+                            <tr>
+                              <td className="sticky left-0 z-10 py-2 px-3 text-gray-600 font-medium bg-gray-50">合计</td>
+                              <td className="sticky left-48 z-10 py-2 px-3 text-right font-bold text-gray-800 bg-gray-50">698</td>
+                              <td className="sticky left-80 z-10 py-2 px-3 text-right text-gray-600 bg-gray-50">-</td>
+                              <td className="sticky left-108 z-10 py-2 px-3 text-center font-bold text-gray-800 bg-gray-50 border-l-2 border-gray-200">85</td>
+                              <td className="py-2 px-3 text-center font-bold text-gray-800">92</td>
+                              <td className="py-2 px-3 text-center font-bold text-gray-800">105</td>
+                              <td className="py-2 px-3 text-center font-bold text-red-600 bg-red-50">235</td>
+                              <td className="py-2 px-3 text-center font-bold text-gray-800">98</td>
+                              <td className="py-2 px-3 text-center font-bold text-gray-800">83</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+                      <div className="text-xs text-gray-500">说明: 用于结构化预测，重点参考历史分渠道、消费力等级预算消耗结构</div>
+                    </div>
+                  </div>
                 </>
                 )}
                 
@@ -9231,260 +9445,154 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                 </>
                 )}
                 
-                {/* 目标与预算参考 */}
-                {referenceSubTab === 'target_budget' && (
-                <>
-                  {/* 模块状态摘要 */}
-                  <div className="flex items-center gap-4 mb-4 text-xs">
-                    <span className="text-gray-500">目标与预算参考</span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      <span className="text-gray-600">已确认 8项</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span className="text-gray-600">AI建议 5项</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                      <span className="text-gray-600">待确认 2项</span>
-                    </span>
-                  </div>
-                  
-                  
-                  {/* 目标口径配置 */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Target className="w-4 h-4 text-indigo-500" />
-                      <h3 className="font-bold text-sm text-gray-800">目标口径配置</h3>
-                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full">资管配置</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">主测算指标</div>
-                        <div className="text-sm font-bold text-gray-900">支付GMV</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">测算范围</div>
-                        <div className="text-sm font-bold text-gray-900">大盘</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">预算口径</div>
-                        <div className="text-sm font-bold text-gray-900">消费券口径</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">货币单位</div>
-                        <div className="text-sm font-bold text-gray-900">CNY / 万元</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* 全周期目标 - 暂不展示 */}
-                  {/*
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-blue-500" />
-                        <h3 className="font-bold text-sm text-gray-800">全周期目标</h3>
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">已确认</span>
-                      </div>
-                      <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100">
-                        编辑目标
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                        <div className="text-xs text-gray-500 mb-1">OKR目标</div>
-                        <div className="text-xl font-bold text-blue-700">8.0亿</div>
-                        <div className="text-xs text-gray-500 mt-1">人工输入</div>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">AI建议值</div>
-                        <div className="text-xl font-bold text-purple-600">7.8亿</div>
-                        <div className="text-xs text-gray-500 mt-1">基于历史可比期</div>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">自然水位预测</div>
-                        <div className="text-xl font-bold text-green-600">6.5亿</div>
-                        <div className="text-xs text-gray-500 mt-1">无预算投入基准</div>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">预算覆盖缺口</div>
-                        <div className="text-xl font-bold text-orange-600">1.5亿</div>
-                        <div className="text-xs text-gray-500 mt-1">需追加预算或调低目标</div>
-                      </div>
-                    </div>
-                  </div>
-                  */}
-                  
-                  {/* 阶段目标 */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <BarChart2 className="w-4 h-4 text-purple-500" />
-                        <h3 className="font-bold text-sm text-gray-800">阶段目标</h3>
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">3个阶段</span>
-                      </div>
-                      <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100">
-                        添加阶段
-                      </button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-600 font-medium">
-                          <tr>
-                            <th className="text-left py-2 px-3">阶段名称</th>
-                            <th className="text-center py-2 px-3">日期范围</th>
-                            <th className="text-center py-2 px-3">阶段类型</th>
-                            <th className="text-right py-2 px-3">阶段目标</th>
-                            <th className="text-right py-2 px-3">目标占比</th>
-                            <th className="text-center py-2 px-3">状态</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">预热期</td>
-                            <td className="py-2 px-3 text-center text-gray-600">6/15-6/17</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">预售/预热</span></td>
-                            <td className="py-2 px-3 text-right font-bold text-gray-900">1.6亿</td>
-                            <td className="py-2 px-3 text-right text-gray-600">20%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">已确认</span></td>
-                          </tr>
-                          <tr className="hover:bg-gray-50 bg-purple-50">
-                            <td className="py-2 px-3 font-bold text-purple-700">正式爆发期</td>
-                            <td className="py-2 px-3 text-center text-purple-600">6/18</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">Big Day</span></td>
-                            <td className="py-2 px-3 text-right font-bold text-purple-700">4.0亿</td>
-                            <td className="py-2 px-3 text-right text-purple-600">50%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">待确认</span></td>
-                          </tr>
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">返场期</td>
-                            <td className="py-2 px-3 text-center text-gray-600">6/19-6/20</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">返场</span></td>
-                            <td className="py-2 px-3 text-right font-bold text-gray-900">2.4亿</td>
-                            <td className="py-2 px-3 text-right text-gray-600">30%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">已确认</span></td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  
-                  {/* 预算结构参考 */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-green-500" />
-                        <h3 className="font-bold text-sm text-gray-800">预算结构参考</h3>
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">本次预算：8000万</span>
-                      </div>
-                      <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100">
-                        从历史复制
-                      </button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-600 font-medium">
-                          <tr>
-                            <th className="text-left py-2 px-3">预算项</th>
-                            <th className="text-right py-2 px-3">历史预算</th>
-                            <th className="text-right py-2 px-3">历史占比</th>
-                            <th className="text-right py-2 px-3">AI建议</th>
-                            <th className="text-right py-2 px-3">本次确认</th>
-                            <th className="text-right py-2 px-3">本次占比</th>
-                            <th className="text-center py-2 px-3">状态</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">消费券预算</td>
-                            <td className="py-2 px-3 text-right text-gray-500">3,200万</td>
-                            <td className="py-2 px-3 text-right text-gray-500">42.7%</td>
-                            <td className="py-2 px-3 text-right text-purple-600">3,000万</td>
-                            <td className="py-2 px-3 text-right font-bold text-green-600">3,000万</td>
-                            <td className="py-2 px-3 text-right text-gray-600">37.5%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">已采纳</span></td>
-                          </tr>
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">追补预算</td>
-                            <td className="py-2 px-3 text-right text-gray-500">1,200万</td>
-                            <td className="py-2 px-3 text-right text-gray-500">16.0%</td>
-                            <td className="py-2 px-3 text-right text-purple-600">1,500万</td>
-                            <td className="py-2 px-3 text-right font-bold text-green-600">1,500万</td>
-                            <td className="py-2 px-3 text-right text-gray-600">18.8%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">已采纳</span></td>
-                          </tr>
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">领航预算</td>
-                            <td className="py-2 px-3 text-right text-gray-500">900万</td>
-                            <td className="py-2 px-3 text-right text-gray-500">12.0%</td>
-                            <td className="py-2 px-3 text-right text-purple-600">800万</td>
-                            <td className="py-2 px-3 text-right text-orange-600">800万</td>
-                            <td className="py-2 px-3 text-right text-gray-600">10.0%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">待确认</span></td>
-                          </tr>
-                          <tr className="hover:bg-gray-50">
-                            <td className="py-2 px-3 font-medium text-gray-900">未分配预算</td>
-                            <td className="py-2 px-3 text-right text-gray-500">2,200万</td>
-                            <td className="py-2 px-3 text-right text-gray-500">29.3%</td>
-                            <td className="py-2 px-3 text-right text-purple-600">2,700万</td>
-                            <td className="py-2 px-3 text-right text-blue-600">2,700万</td>
-                            <td className="py-2 px-3 text-right text-gray-600">33.7%</td>
-                            <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">动态池</span></td>
-                          </tr>
-                          <tr className="bg-gray-50 font-medium">
-                            <td className="py-2 px-3 text-gray-700">合计</td>
-                            <td className="py-2 px-3 text-right text-gray-700">7,500万</td>
-                            <td className="py-2 px-3 text-right text-gray-500">100%</td>
-                            <td className="py-2 px-3 text-right text-purple-600">8,000万</td>
-                            <td className="py-2 px-3 text-right text-green-700">8,000万</td>
-                            <td className="py-2 px-3 text-right text-gray-700">100%</td>
-                            <td className="py-2 px-3 text-center">-</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                      <p className="text-xs text-blue-700">
-                        <span className="font-medium">💡 AI建议：</span>本次预算较历史增加6.7%，建议预留更多动态追补空间（占比33.7%），以应对Big Day流量波动和竞对冲击。
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* 关键参数参考 */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Lightbulb className="w-4 h-4 text-yellow-500" />
-                      <h3 className="font-bold text-sm text-gray-800">历史关键参数</h3>
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">数仓获取</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">T+2发货率</div>
-                        <div className="text-lg font-bold text-gray-900">89.8%</div>
-                        <div className="text-xs text-gray-400 mt-1">Big Day峰值 90.2%</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">结算率</div>
-                        <div className="text-lg font-bold text-gray-900">94.2%</div>
-                        <div className="text-xs text-gray-400 mt-1">T+7结算口径</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">增量兑换比</div>
-                        <div className="text-lg font-bold text-purple-600">1:6.8</div>
-                        <div className="text-xs text-gray-400 mt-1">历史最优水位</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-1">发货GMV_限支付日期</div>
-                        <div className="text-lg font-bold text-green-600">92.5%</div>
-                        <div className="text-xs text-gray-400 mt-1">T-2窗口占比</div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-                )}
+
                 
+              </>
+              )}
+              
+              {/* 测算逻辑 Tab 内容 */}
+              {targetTab === 'logic' && (
+              <>
+                {/* 顶部操作区 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Workflow className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">测算逻辑模型库</h3>
+                        <p className="text-xs text-gray-500">在此沉淀和共建各视角的测算逻辑模型</p>
+                      </div>
+                    </div>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors">
+                      <PlusCircle className="w-4 h-4" />
+                      + 新建测算逻辑
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 内容展示区 - 分两个分组 */}
+                <div className="space-y-4">
+                  {/* 资管组全局预测 */}
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <h3 className="font-semibold text-gray-800">资管组全局预测</h3>
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">3个模型</span>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {[
+                        { id: '1', name: '自然水位分日预测', creator: '资管', updateTime: '2026-05-10', description: '基于历史大盘不投预算的基线分布预测。', tags: ['大盘', '自然水位', '基线'], status: 'active' },
+                        { id: '2', name: '含预算分日GMV预测', creator: '资管', updateTime: '2026-05-11', description: '结合各类型预算投入节奏与杠杆系数的最终GMV测算。', tags: ['大盘', '含预算', '杠杆'], status: 'active' },
+                        { id: '3', name: '发货GMV分日预测', creator: '资管', updateTime: '2026-05-12', description: '基于支付GMV及历史履约时效延迟分布的转化模型。', tags: ['大盘', '发货', '履约'], status: 'active' }
+                      ].map((skill) => (
+                        <div key={skill.id} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-gray-900">{skill.name}</h4>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${skill.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {skill.status === 'active' ? '已发布' : '已停用'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-2">{skill.description}</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-400">
+                                <span>贡献者：{skill.creator}</span>
+                                <span>更新时间：{skill.updateTime}</span>
+                              </div>
+                              <div className="flex gap-2 mt-2">
+                                {skill.tags.map((tag, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{tag}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
+                                查看详情
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
+                                复制
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
+                                停用
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                                引用
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* 行业组专属预测 */}
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 bg-orange-50 border-b border-orange-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <h3 className="font-semibold text-gray-800">行业组专属预测</h3>
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">4个模型</span>
+                        </div>
+                        <select className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                          <option value="">全部行业</option>
+                          <option value="3C数码">3C数码</option>
+                          <option value="美妆">美妆</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {[
+                        { id: '4', name: '3C数码分日/分阶段GMV预测', subGroup: '3C数码', creator: '3C数码组', updateTime: '2026-05-13', description: '结合3C数码品类特征的大促各阶段及分日GMV拆解逻辑。', tags: ['行业专属', '阶段拆解', '3C数码'], status: 'active' },
+                        { id: '5', name: '3C数码发货GMV预测', subGroup: '3C数码', creator: '3C数码组', updateTime: '2026-05-13', description: '基于3C数码商品供应链与仓配时效特征的发货规模预测。', tags: ['行业专属', '供应链', '3C数码'], status: 'active' },
+                        { id: '6', name: '美妆分日/分阶段GMV预测', subGroup: '美妆', creator: '美妆组', updateTime: '2026-05-13', description: '结合美妆品类特征的大促各阶段及分日GMV拆解逻辑。', tags: ['行业专属', '阶段拆解', '美妆'], status: 'active' },
+                        { id: '7', name: '美妆发货GMV预测', subGroup: '美妆', creator: '美妆组', updateTime: '2026-05-13', description: '基于美妆商品供应链与仓配时效特征的发货规模预测。', tags: ['行业专属', '供应链', '美妆'], status: 'active' }
+                      ].map((skill) => (
+                        <div key={skill.id} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-gray-900">{skill.name}</h4>
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">{skill.subGroup}</span>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${skill.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {skill.status === 'active' ? '已发布' : '已停用'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-2">{skill.description}</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-400">
+                                <span>贡献者：{skill.creator}</span>
+                                <span>更新时间：{skill.updateTime}</span>
+                              </div>
+                              <div className="flex gap-2 mt-2">
+                                {skill.tags.map((tag, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{tag}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
+                                查看详情
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
+                                复制
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
+                                停用
+                              </button>
+                              <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                                引用
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </>
               )}
             </>
