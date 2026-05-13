@@ -380,19 +380,32 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     const baseValue = parseInt(naturalWaterLevelData.reduce((sum, d) => sum + d.value, 0).toString());
     let totalTarget;
     
-    if (calculatedTotalTarget) {
-      // 通过全周期GMV目标计算
-      totalTarget = parseInt(calculatedTotalTarget);
-    } else if (currentIncrementTarget) {
+    if (step2TotalGMV) {
+      // 通过 Step2 的全周期GMV目标计算
+      totalTarget = parseInt(step2TotalGMV);
+    } else if (step2GrowthPercentage) {
       // 通过增量百分比计算
-      const increment = parseInt(currentIncrementTarget) / 100;
+      const increment = parseInt(step2GrowthPercentage) / 100;
       totalTarget = Math.round(baseValue * (1 + increment));
-    } else if (incrementGMVTarget) {
+    } else if (step2GrowthGMV) {
       // 通过增量GMV目标计算
-      totalTarget = baseValue + parseInt(incrementGMVTarget);
+      totalTarget = baseValue + parseInt(step2GrowthGMV);
     } else {
       totalTarget = baseValue;
     }
+    
+    // 更新 phases 状态
+    const phaseWeights = [0.3, 0.35, 0.35];
+    setPhases(prevPhases => prevPhases.map((phase, index) => {
+      const weight = phaseWeights[index] || (1 / prevPhases.length);
+      const target = Math.round(totalTarget * weight);
+      return {
+        ...phase,
+        aiTarget: target,
+        manualTarget: target,
+        status: 'confirmed' as const,
+      };
+    }));
     
     const phaseTargets = [
       { phase: '预热期', startDate: '2026-06-15', endDate: '2026-06-17', aiTarget: Math.round(totalTarget * 0.30), manualTarget: Math.round(totalTarget * 0.30), status: 'confirmed' },
@@ -1010,6 +1023,51 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   const competitorOptions = ['淘天', 'PDD', '京东', '快手', '视频号电商'];
   
+  // 历史参考促数据
+  const historicalPromotions = [
+    {
+      id: '2025-618',
+      name: '2025年618大促',
+      description: '预热期(5.24-6.15) → 爆发期(6.16-6.18) → 返场期(6.19-6.25)',
+      phases: [
+        { name: '预热期', startDate: '2025-05-24', endDate: '2025-06-15', isBigDay: false },
+        { name: '开门红', startDate: '2025-06-01', endDate: '2025-06-03', isBigDay: true },
+        { name: '爆发期', startDate: '2025-06-16', endDate: '2025-06-18', isBigDay: true },
+        { name: '返场期', startDate: '2025-06-19', endDate: '2025-06-25', isBigDay: false }
+      ]
+    },
+    {
+      id: '2025-double11',
+      name: '2025年双11大促',
+      description: '预售期(10.15-10.31) → 开门红(11.1) → 爆发期(11.1-11.11) → 返场期(11.12-11.15)',
+      phases: [
+        { name: '预热期', startDate: '2025-10-15', endDate: '2025-10-31', isBigDay: false },
+        { name: '开门红', startDate: '2025-11-01', endDate: '2025-11-03', isBigDay: true },
+        { name: '爆发期', startDate: '2025-11-01', endDate: '2025-11-11', isBigDay: true },
+        { name: '返场期', startDate: '2025-11-12', endDate: '2025-11-15', isBigDay: false }
+      ]
+    },
+    {
+      id: '2024-618',
+      name: '2024年618大促',
+      description: '预热期(5.20-6.10) → 爆发期(6.11-6.20)',
+      phases: [
+        { name: '预热期', startDate: '2024-05-20', endDate: '2024-06-10', isBigDay: false },
+        { name: '爆发期', startDate: '2024-06-11', endDate: '2024-06-20', isBigDay: true }
+      ]
+    },
+    {
+      id: '2024-double11',
+      name: '2024年双11大促',
+      description: '预热期(10.20-11.1) → 爆发期(11.1-11.11) → 返场期(11.12-11.14)',
+      phases: [
+        { name: '预热期', startDate: '2024-10-20', endDate: '2024-11-01', isBigDay: false },
+        { name: '爆发期', startDate: '2024-11-01', endDate: '2024-11-11', isBigDay: true },
+        { name: '返场期', startDate: '2024-11-12', endDate: '2024-11-14', isBigDay: false }
+      ]
+    }
+  ];
+  
   // 本次大促规划相关状态
   const [incrementType, setIncrementType] = useState<'percentage' | 'total'>('percentage');
   const [incrementValue, setIncrementValue] = useState('30');
@@ -1043,6 +1101,144 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [step2GrowthGMV, setStep2GrowthGMV] = useState<string>('3540');
   const [step2TotalGMV, setStep2TotalGMV] = useState<string>('15340');
   const syncingFrom = useRef<'step2' | 'target' | null>(null);
+  
+  // Step2 滑块式分阶段目标分配相关状态
+  const [phaseConfigs, setPhaseConfigs] = useState<Array<{
+    id: number | string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    historicalContributionRatio: number;
+    target: number;
+    isLocked: boolean;
+    color: string;
+  }>>([]);
+  
+  const [activePhase, setActivePhase] = useState<number | string | null>(null);
+  const [isPhaseAllocationConfirmed, setIsPhaseAllocationConfirmed] = useState(false);
+  const [draggingDivider, setDraggingDivider] = useState<number | null>(null);
+  
+  // 阶段配色
+  const phaseColors = ['#6B7280', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6'];
+  
+  // 初始化 phaseConfigs
+  useEffect(() => {
+    if (phases.length > 0) {
+      const total = parseFloat(step2TotalGMV) || 0;
+      const historicalRatios = [0.3, 0.35, 0.35, 0.25, 0.55, 0.2]; // 历史占比参考值
+      
+      const configs = phases.map((phase, index) => {
+        const ratio = historicalRatios[index] || (1 / phases.length);
+        const target = Math.round(total * ratio);
+        
+        return {
+          id: phase.id,
+          name: phase.name,
+          startDate: phase.startDate,
+          endDate: phase.endDate,
+          historicalContributionRatio: ratio,
+          target: phase.manualTarget > 0 ? phase.manualTarget : target,
+          isLocked: false,
+          color: phaseColors[index % phaseColors.length]
+        };
+      });
+      
+      setPhaseConfigs(configs);
+    }
+  }, [phases, step2TotalGMV]);
+  
+  // 处理滑块拖动
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggingDivider === null || phaseConfigs.length < 2) return;
+      
+      const sliderContainer = document.querySelector('.slider-container') as HTMLElement;
+      if (!sliderContainer) return;
+      
+      const rect = sliderContainer.getBoundingClientRect();
+      const containerWidth = rect.width;
+      const mouseX = e.clientX - rect.left;
+      const percentage = (mouseX / containerWidth) * 100;
+      
+      // 拖动第draggingDivider个分界，调整phase[draggingDivider]和phase[draggingDivider+1]的大小
+      const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
+      
+      // 计算当前各阶段的百分比
+      const currentPercentages = phaseConfigs.map(p => totalTarget > 0 ? (p.target / totalTarget) * 100 : 0);
+      
+      // 计算分界点当前位置
+      const currentDividerPosition = currentPercentages.slice(0, draggingDivider + 1).reduce((a, b) => a + b, 0);
+      
+      // 计算移动的距离百分比
+      const deltaPercentage = Math.max(Math.min(percentage - currentDividerPosition, 20), -20);
+      
+      if (Math.abs(deltaPercentage) > 0.5) {
+        setPhaseConfigs(prevConfigs => {
+          const newConfigs = [...prevConfigs];
+          const config1 = newConfigs[draggingDivider];
+          const config2 = newConfigs[draggingDivider + 1];
+          
+          // 检查锁定状态
+          if (config1.isLocked && config2.isLocked) return newConfigs;
+          
+          const percentage1 = totalTarget > 0 ? (config1.target / totalTarget) * 100 : 0;
+          const percentage2 = totalTarget > 0 ? (config2.target / totalTarget) * 100 : 0;
+          
+          // 计算新的百分比，确保都不低于5%
+          let newPercentage1 = percentage1 + deltaPercentage;
+          let newPercentage2 = percentage2 - deltaPercentage;
+          
+          const minPercentage = 5;
+          if (newPercentage1 < minPercentage) {
+            const adjust = minPercentage - newPercentage1;
+            newPercentage1 = minPercentage;
+            newPercentage2 -= adjust;
+          }
+          if (newPercentage2 < minPercentage) {
+            const adjust = minPercentage - newPercentage2;
+            newPercentage2 = minPercentage;
+            newPercentage1 -= adjust;
+          }
+          
+          if (newPercentage1 >= minPercentage && newPercentage2 >= minPercentage) {
+            if (!config1.isLocked) {
+              newConfigs[draggingDivider] = {
+                ...config1,
+                target: Math.round(totalTarget * (newPercentage1 / 100))
+              };
+            }
+            if (!config2.isLocked) {
+              newConfigs[draggingDivider + 1] = {
+                ...config2,
+                target: Math.round(totalTarget * (newPercentage2 / 100))
+              };
+            }
+          }
+          
+          return newConfigs;
+        });
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setDraggingDivider(null);
+      if (stepCalculated[1]) {
+        const newConfigModified = [...stepConfigModified];
+        newConfigModified[1] = true;
+        setStepConfigModified(newConfigModified);
+      }
+    };
+    
+    if (draggingDivider !== null) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [draggingDivider, phaseConfigs.length, stepCalculated]);
   
   // Step 2：三个输入框的联动逻辑
   useEffect(() => {
@@ -1135,6 +1331,25 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
       }
     }
   }, [targetGmv, focusedInput, step2TotalGMV, step2GrowthGMV, step2GrowthPercentage, naturalWaterLevelData]);
+  
+  // Step 2：全周期目标变化时，自动分配各阶段目标
+  useEffect(() => {
+    const total = parseFloat(step2TotalGMV);
+    if (total > 0 && stepCalculated[1]) {
+      // 历史同等级大促的阶段贡献占比
+      const phaseWeights = [0.3, 0.35, 0.35]; // 预热期30%，爆发期35%，返场期35%
+      // 使用函数式更新避免依赖 phases 状态
+      setPhases(prevPhases => prevPhases.map((phase, index) => {
+        const weight = phaseWeights[index] || (1 / prevPhases.length);
+        const target = Math.round(total * weight);
+        return {
+          ...phase,
+          aiTarget: target,
+          manualTarget: target,
+        };
+      }));
+    }
+  }, [step2TotalGMV, stepCalculated]);
   
   const handleStartCalculation = () => {
     setIsCalculationComplete(false);
@@ -6292,6 +6507,129 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       
+                      {/* 阶段配置 */}
+                      <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">📝</span>
+                            <span className="text-sm font-medium text-gray-700">阶段配置</span>
+                          </div>
+                          
+                          {/* 历史参考促选择 */}
+                          <div className="flex items-center gap-2">
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  // 复用历史阶段划分
+                                  const selectedPromotion = historicalPromotions.find(p => p.id === e.target.value);
+                                  if (selectedPromotion) {
+                                    // 将历史日期偏移到当前年份（2026）
+                                    const currentYear = '2026';
+                                    const newPhases = selectedPromotion.phases.map((histPhase, idx) => ({
+                                      id: idx + 1,
+                                      name: histPhase.name,
+                                      startDate: histPhase.startDate.replace(/^\d{4}/, currentYear),
+                                      endDate: histPhase.endDate.replace(/^\d{4}/, currentYear),
+                                      isBigDay: histPhase.isBigDay,
+                                      aiTarget: 0,
+                                      manualTarget: 0,
+                                      status: 'pending' as const
+                                    }));
+                                    setPhases(newPhases);
+                                    // 如果已经测算过，标记配置为已修改
+                                    if (stepCalculated[1]) {
+                                      const newConfigModified = [...stepConfigModified];
+                                      newConfigModified[1] = true;
+                                      setStepConfigModified(newConfigModified);
+                                    }
+                                  }
+                                  // 重置选择框
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                              defaultValue=""
+                            >
+                              <option value="">📚 复用历史参考促阶段</option>
+                              {historicalPromotions.map(promo => (
+                                <option key={promo.id} value={promo.id}>
+                                  {promo.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {phases.map((phase, index) => (
+                            <div key={phase.id} className="flex items-center gap-3">
+                              <span className="w-16 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 font-medium">
+                                阶段{index + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={phase.name}
+                                onChange={(e) => {
+                                  const newPhases = phases.map(p => 
+                                    p.id === phase.id ? { ...p, name: e.target.value } : p
+                                  );
+                                  setPhases(newPhases);
+                                }}
+                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                placeholder="阶段名"
+                              />
+                              <input
+                                type="date"
+                                value={phase.startDate}
+                                onChange={(e) => {
+                                  const newPhases = phases.map(p => 
+                                    p.id === phase.id ? { ...p, startDate: e.target.value } : p
+                                  );
+                                  setPhases(newPhases);
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-gray-400">至</span>
+                              <input
+                                type="date"
+                                value={phase.endDate}
+                                onChange={(e) => {
+                                  const newPhases = phases.map(p => 
+                                    p.id === phase.id ? { ...p, endDate: e.target.value } : p
+                                  );
+                                  setPhases(newPhases);
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {phases.length > 1 && (
+                                <button
+                                  onClick={() => setPhases(phases.filter(p => p.id !== phase.id))}
+                                  className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
+                                >
+                                  删除
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setPhases([...phases, { id: Date.now(), name: '', startDate: '', endDate: '', isBigDay: false, aiTarget: 0, manualTarget: 0, status: 'pending' }])}
+                            className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                          >
+                            + 添加阶段
+                          </button>
+                        </div>
+                      </div>
+                      
                       {/* 人工输入区 */}
                       <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
                         <div className="flex items-center gap-2 mb-3">
@@ -6417,6 +6755,213 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       
+                      {/* 分阶段目标分配 - 滑块式 */}
+                      <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">🎯</span>
+                          <span className="text-sm font-medium text-gray-700">分阶段目标分配</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4">
+                          系统已根据历史同等级大促的阶段贡献占比自动分配目标，您可根据本次大促策略调整。拖动滑块调整各阶段占比。
+                        </p>
+                        
+                        {/* 核心滑块区 */}
+                        {phaseConfigs.length > 0 && (
+                          <div className="relative mb-4">
+                            <div 
+                              className="flex h-16 rounded-lg overflow-hidden relative slider-container"
+                              style={{ height: '64px' }}
+                            >
+                              {phaseConfigs.map((phase, index) => {
+                                const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
+                                const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
+                                
+                                return (
+                                  <div
+                                    key={phase.id}
+                                    className="relative flex items-center justify-center cursor-pointer transition-all duration-200 group"
+                                    style={{ 
+                                      width: `${percentage}%`, 
+                                      backgroundColor: phase.color,
+                                      minWidth: '5%'
+                                    }}
+                                    onClick={() => setActivePhase(phase.id)}
+                                  >
+                                    {/* 历史占比参考线 */}
+                                    <div
+                                      className="absolute top-0 bottom-0 w-0.5 bg-white/50"
+                                      style={{ 
+                                        left: `${phase.historicalContributionRatio * 100}%` 
+                                      }}
+                                      title={`历史同期占比：${Math.round(phase.historicalContributionRatio * 100)}%`}
+                                    />
+                                    
+                                    <div className="text-white text-center px-1">
+                                      <div className={`font-medium flex items-center justify-center gap-1 ${draggingDivider === index || draggingDivider === index - 1 ? 'text-lg' : 'text-sm'}`}>
+                                        {phase.name}
+                                        {phase.isLocked && <span>🔒</span>}
+                                      </div>
+                                      <div className={`text-white/90 ${draggingDivider === index || draggingDivider === index - 1 ? 'text-sm' : 'text-xs'}`}>
+                                        ¥{phase.target.toLocaleString()}万 / {Math.round(percentage)}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              
+                              {/* 分界滑块 */}
+                              {phaseConfigs.slice(0, -1).map((_, index) => (
+                                <div
+                                  key={`divider-${index}`}
+                                  className="absolute top-0 bottom-0 w-1.5 bg-white/80 cursor-ew-resize hover:bg-white z-10 group"
+                                  style={{ 
+                                    left: `${phaseConfigs.slice(0, index + 1).reduce((sum, p) => {
+                                      const total = phaseConfigs.reduce((s, ph) => s + ph.target, 0);
+                                      return sum + (total > 0 ? (p.target / total) * 100 : 0);
+                                    }, 0)}%`,
+                                    transform: 'translateX(-50%)'
+                                  }}
+                                  onMouseDown={() => setDraggingDivider(index)}
+                                >
+                                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-0.5">
+                                      <div className="w-0.5 h-3 bg-gray-400 rounded-full" />
+                                      <div className="w-0.5 h-3 bg-gray-400 rounded-full" />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 阶段详情悬浮层 */}
+                        {activePhase && phaseConfigs.find(p => p.id === activePhase) && (
+                          <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                            {(() => {
+                              const phase = phaseConfigs.find(p => p.id === activePhase)!;
+                              const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
+                              const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
+                              
+                              return (
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-800 mb-3">
+                                    【{phase.name}】
+                                  </div>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">日期范围：</span>
+                                      <span className="text-gray-800">{phase.startDate} ~ {phase.endDate}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">历史占比：</span>
+                                      <span className="text-gray-800">{Math.round(phase.historicalContributionRatio * 100)}%</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-gray-600">当前目标：</span>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          value={phase.target}
+                                          onChange={(e) => {
+                                            const newValue = parseInt(e.target.value) || 0;
+                                            setPhaseConfigs(phaseConfigs.map(p => 
+                                              p.id === activePhase ? { ...p, target: newValue } : p
+                                            ));
+                                            if (stepCalculated[1]) {
+                                              const newConfigModified = [...stepConfigModified];
+                                              newConfigModified[1] = true;
+                                              setStepConfigModified(newConfigModified);
+                                            }
+                                          }}
+                                          className="w-32 px-2 py-1 border border-gray-300 rounded text-right text-sm"
+                                        />
+                                        <span className="text-gray-800">万 ({Math.round(percentage)}%)</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                                    <button
+                                      onClick={() => {
+                                        setPhaseConfigs(phaseConfigs.map(p => 
+                                          p.id === activePhase ? { ...p, isLocked: !p.isLocked } : p
+                                        ));
+                                      }}
+                                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                                    >
+                                      {phase.isLocked ? '解锁占比' : '锁定占比'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
+                                        const newTarget = Math.round(totalTarget * phase.historicalContributionRatio);
+                                        setPhaseConfigs(phaseConfigs.map(p => 
+                                          p.id === activePhase ? { ...p, target: newTarget } : p
+                                        ));
+                                        if (stepCalculated[1]) {
+                                          const newConfigModified = [...stepConfigModified];
+                                          newConfigModified[1] = true;
+                                          setStepConfigModified(newConfigModified);
+                                        }
+                                      }}
+                                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                                    >
+                                      重置为历史占比
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                        
+                        {/* 底部操作栏 */}
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-gray-700">
+                            总目标：¥{parseFloat(step2TotalGMV).toLocaleString()}万 | 共{phaseConfigs.length}个促销阶段
+                          </div>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => {
+                                const total = parseFloat(step2TotalGMV) || 0;
+                                const historicalRatios = [0.3, 0.35, 0.35, 0.25, 0.55, 0.2];
+                                setPhaseConfigs(phaseConfigs.map((phase, index) => ({
+                                  ...phase,
+                                  target: Math.round(total * (historicalRatios[index] || (1 / phaseConfigs.length))),
+                                  isLocked: false
+                                })));
+                                setIsPhaseAllocationConfirmed(false);
+                              }}
+                              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              重置分配
+                            </button>
+                            <button
+                              onClick={() => {
+                                // 同步到phases状态
+                                const newPhases = phases.map(p => {
+                                  const config = phaseConfigs.find(c => c.id === p.id);
+                                  if (config) {
+                                    return { ...p, manualTarget: config.target };
+                                  }
+                                  return p;
+                                });
+                                setPhases(newPhases);
+                                setIsPhaseAllocationConfirmed(true);
+                              }}
+                              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
+                                isPhaseAllocationConfirmed 
+                                  ? 'bg-green-500 text-white cursor-default' 
+                                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                              }`}
+                              disabled={isPhaseAllocationConfirmed}
+                            >
+                              {isPhaseAllocationConfirmed ? '已确认' : '确认分配'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {/* AI结论区域 - Step 2 */}
                       {stepCalculated[1] && (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -6429,7 +6974,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 全周期目标已确认：基于自然水位基线，当前设定增量为 <span className="text-green-700">+{step2GrowthPercentage}%</span>，全周期总目标跃升至 <span className="text-green-700 font-bold">{parseInt(step2TotalGMV).toLocaleString()}万</span>。
                               </p>
                               <p className="text-green-800/80">
-                                目标加压幅度处于合理挑战区间。请进入下一步，AI 将结合周末效应与 BigDay 节奏，为您智能拆解该目标的分日规划。
+                                目标加压幅度处于合理挑战区间。您可选择复用历史参考促的阶段划分，或根据本次大促策略调整阶段配置。请进入下一步，AI 将结合周末效应与 BigDay 节奏，为您智能拆解该目标的分日规划。
                               </p>
                             </div>
                           </div>
@@ -6526,83 +7071,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <span className="text-2xl">📅</span>
                         <div>
                           <h3 className="font-bold text-gray-900">步骤3：大盘支付GMV分日预测</h3>
-                          <p className="text-xs text-gray-500">配置阶段节奏和预算规划，然后生成分日目标</p>
-                        </div>
-                      </div>
-                      
-                      {/* 阶段配置 */}
-                      <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">📝</span>
-                          <span className="text-sm font-medium text-gray-700">阶段配置</span>
-                        </div>
-                        <div className="space-y-3">
-                          {phases.map((phase, index) => (
-                            <div key={phase.id} className="flex items-center gap-3">
-                              <span className="w-16 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 font-medium">
-                                阶段{index + 1}
-                              </span>
-                              <input
-                                type="text"
-                                value={phase.name}
-                                onChange={(e) => {
-                                  const newPhases = phases.map(p => 
-                                    p.id === phase.id ? { ...p, name: e.target.value } : p
-                                  );
-                                  setPhases(newPhases);
-                                }}
-                                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                placeholder="阶段名"
-                              />
-                              <input
-                                type="date"
-                                value={phase.startDate}
-                                onChange={(e) => {
-                                  const newPhases = phases.map(p => 
-                                    p.id === phase.id ? { ...p, startDate: e.target.value } : p
-                                  );
-                                  setPhases(newPhases);
-                                  if (stepCalculated[2]) {
-                                    const newConfigModified = [...stepConfigModified];
-                                    newConfigModified[2] = true;
-                                    setStepConfigModified(newConfigModified);
-                                  }
-                                }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <span className="text-gray-400">至</span>
-                              <input
-                                type="date"
-                                value={phase.endDate}
-                                onChange={(e) => {
-                                  const newPhases = phases.map(p => 
-                                    p.id === phase.id ? { ...p, endDate: e.target.value } : p
-                                  );
-                                  setPhases(newPhases);
-                                  if (stepCalculated[2]) {
-                                    const newConfigModified = [...stepConfigModified];
-                                    newConfigModified[2] = true;
-                                    setStepConfigModified(newConfigModified);
-                                  }
-                                }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              {phases.length > 1 && (
-                                <button
-                                  onClick={() => setPhases(phases.filter(p => p.id !== phase.id))}
-                                  className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
-                                >
-                                  删除
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => setPhases([...phases, { id: Date.now(), name: '', startDate: '', endDate: '', isBigDay: false, aiTarget: 0, manualTarget: 0, status: 'pending' }])}
-                            className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-                          >
-                            + 添加阶段
-                          </button>
+                          <p className="text-xs text-gray-500">基于 Step2 配置的阶段和预算规划，生成分日目标</p>
                         </div>
                       </div>
                       
@@ -6896,6 +7365,122 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </tbody>
                             </table>
                           </div>
+                        </div>
+                        
+                        {/* 分阶段目标完成进度预测 */}
+                        <div className="p-4 border-t border-gray-200">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-semibold text-gray-800">分阶段目标完成进度预测</h4>
+                            {phaseConfigs.length > 0 && (
+                              <span className="text-sm text-gray-600">
+                                总目标: ¥{phaseConfigs.reduce((sum, p) => sum + p.target, 0).toLocaleString()}万
+                              </span>
+                            )}
+                          </div>
+                          
+                          {!isPhaseAllocationConfirmed || phaseConfigs.length === 0 ? (
+                            <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">
+                              请先在Step2确认分阶段目标分配
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {/* 分阶段时间区间标记带 */}
+                              <div className="relative h-16 bg-gray-50 rounded-lg overflow-hidden">
+                                {phaseConfigs.map((phase, index) => {
+                                  const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
+                                  const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
+                                  
+                                  // 模拟预测完成率
+                                  const completionRate = 85 + Math.random() * 30; // 85%-115%
+                                  const statusColor = completionRate >= 100 ? '#10B981' : completionRate >= 90 ? '#F59E0B' : '#EF4444';
+                                  
+                                  return (
+                                    <div
+                                      key={phase.id}
+                                      className="absolute h-full flex flex-col justify-center items-center px-2 cursor-pointer transition-all hover:opacity-90"
+                                      style={{
+                                        left: `${phaseConfigs.slice(0, index).reduce((sum, p) => {
+                                          const t = phaseConfigs.reduce((s, ph) => s + ph.target, 0);
+                                          return sum + (t > 0 ? (p.target / t) * 100 : 0);
+                                        }, 0)}%`,
+                                        width: `${percentage}%`,
+                                        backgroundColor: phase.color,
+                                        opacity: 0.2
+                                      }}
+                                      onClick={() => {
+                                        setCalculationStep(1);
+                                        setActivePhase(phase.id);
+                                      }}
+                                    >
+                                      {/* 阶段信息 */}
+                                      <div className="text-center text-xs">
+                                        <div className="font-medium" style={{ color: phase.color }}>
+                                          {phase.name}
+                                        </div>
+                                        <div className="text-gray-600">
+                                          ¥{phase.target.toLocaleString()}万
+                                        </div>
+                                        <div 
+                                          className="font-semibold"
+                                          style={{ color: statusColor }}
+                                        >
+                                          {completionRate.toFixed(0)}%
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              
+                              {/* 详细列表 */}
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">阶段</th>
+                                      <th className="py-2 px-3 text-center text-xs font-semibold text-gray-600">日期区间</th>
+                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">目标GMV</th>
+                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">预测GMV</th>
+                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">完成率</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-200">
+                                    {phaseConfigs.map((phase) => {
+                                      const completionRate = 85 + Math.random() * 30;
+                                      const predictedGmv = Math.round(phase.target * completionRate / 100);
+                                      const statusColor = completionRate >= 100 ? 'text-green-600' : completionRate >= 90 ? 'text-yellow-600' : 'text-red-600';
+                                      
+                                      return (
+                                        <tr key={phase.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setCalculationStep(1)}>
+                                          <td className="py-2 px-3 font-medium">
+                                            <span className="inline-flex items-center gap-1">
+                                              <span 
+                                                className="w-2 h-2 rounded-full"
+                                                style={{ backgroundColor: phase.color }}
+                                              />
+                                              {phase.name}
+                                            </span>
+                                          </td>
+                                          <td className="py-2 px-3 text-center text-gray-600">
+                                            {phase.startDate} ~ {phase.endDate}
+                                          </td>
+                                          <td className="py-2 px-3 text-right text-gray-700">
+                                            ¥{phase.target.toLocaleString()}万
+                                          </td>
+                                          <td className="py-2 px-3 text-right text-gray-700">
+                                            ¥{predictedGmv.toLocaleString()}万
+                                          </td>
+                                          <td className={`py-2 px-3 text-right font-semibold ${statusColor}`}>
+                                            {completionRate.toFixed(1)}%
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
