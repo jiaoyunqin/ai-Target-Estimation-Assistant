@@ -11583,10 +11583,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <p className="text-xs text-gray-500">在此沉淀和共建各视角的测算逻辑模型</p>
                       </div>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors">
-                      <PlusCircle className="w-4 h-4" />
-                      + 新建测算逻辑
-                    </button>
+                    {!isBusinessLeader && (
+                      <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors">
+                        <PlusCircle className="w-4 h-4" />
+                        + 新建测算逻辑
+                      </button>
+                    )}
                   </div>
                 </div>
                 
@@ -11631,15 +11633,19 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
                                 查看详情
                               </button>
-                              <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
-                                复制
-                              </button>
-                              <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
-                                停用
-                              </button>
-                              <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                                引用
-                              </button>
+                              {!isBusinessLeader && (
+                                <>
+                                  <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
+                                    复制
+                                  </button>
+                                  <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
+                                    停用
+                                  </button>
+                                  <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                                    引用
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -11669,45 +11675,54 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         { id: '5', name: '3C数码发货GMV预测', subGroup: '3C数码', creator: '3C数码组', updateTime: '2026-05-13', description: '基于3C数码商品供应链与仓配时效特征的发货规模预测。', tags: ['行业专属', '供应链', '3C数码'], status: 'active' },
                         { id: '6', name: '美妆分日/分阶段GMV预测', subGroup: '美妆', creator: '美妆组', updateTime: '2026-05-13', description: '结合美妆品类特征的大促各阶段及分日GMV拆解逻辑。', tags: ['行业专属', '阶段拆解', '美妆'], status: 'active' },
                         { id: '7', name: '美妆发货GMV预测', subGroup: '美妆', creator: '美妆组', updateTime: '2026-05-13', description: '基于美妆商品供应链与仓配时效特征的发货规模预测。', tags: ['行业专属', '供应链', '美妆'], status: 'active' }
-                      ].map((skill) => (
-                        <div key={skill.id} className="p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-gray-900">{skill.name}</h4>
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">{skill.subGroup}</span>
-                                <span className={`px-2 py-0.5 text-xs rounded-full ${skill.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                  {skill.status === 'active' ? '已发布' : '已停用'}
-                                </span>
+                      ].map((skill) => {
+                        // 判断是否是自己行业的skill
+                        const isOwnIndustry = isBusinessLeader && industryContext?.industry === skill.subGroup;
+                        
+                        return (
+                          <div key={skill.id} className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-gray-900">{skill.name}</h4>
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">{skill.subGroup}</span>
+                                  <span className={`px-2 py-0.5 text-xs rounded-full ${skill.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    {skill.status === 'active' ? '已发布' : '已停用'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-2">{skill.description}</p>
+                                <div className="flex items-center gap-4 text-xs text-gray-400">
+                                  <span>贡献者：{skill.creator}</span>
+                                  <span>更新时间：{skill.updateTime}</span>
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                  {skill.tags.map((tag, idx) => (
+                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{tag}</span>
+                                  ))}
+                                </div>
                               </div>
-                              <p className="text-xs text-gray-500 mb-2">{skill.description}</p>
-                              <div className="flex items-center gap-4 text-xs text-gray-400">
-                                <span>贡献者：{skill.creator}</span>
-                                <span>更新时间：{skill.updateTime}</span>
+                              <div className="flex items-center gap-2">
+                                <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
+                                  查看详情
+                                </button>
+                                {(!isBusinessLeader || isOwnIndustry) && (
+                                  <>
+                                    <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
+                                      复制
+                                    </button>
+                                    <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
+                                      停用
+                                    </button>
+                                    <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                                      引用
+                                    </button>
+                                  </>
+                                )}
                               </div>
-                              <div className="flex gap-2 mt-2">
-                                {skill.tags.map((tag, idx) => (
-                                  <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{tag}</span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50 rounded hover:bg-blue-100">
-                                查看详情
-                              </button>
-                              <button className="px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100">
-                                复制
-                              </button>
-                              <button className="px-3 py-1.5 text-xs text-orange-600 bg-orange-50 rounded hover:bg-orange-100">
-                                停用
-                              </button>
-                              <button className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                                引用
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
