@@ -1,0 +1,129 @@
+src/components/ai-bot/ReportArea.tsx
+  a97010b169ba442b 867-917,1203,10518-10533,10585-10587,10659-10662,10679,10702,10708,10712 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a05bab0a26691104a928cc8","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Range":[867,917]},{"Single":1203},{"Range":[10518,10533]},{"Range":[10585,10587]},{"Range":[10659,10662]},{"Single":10679},{"Single":10702},{"Single":10708},{"Single":10712}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "c06bfd94e2a6b11b02f447309e5e01c04027ca68",
+  "prompts": {
+    "a97010b169ba442b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a058b2663c991a00c024aab",
+        "model": "Doubao-Seed-2.0-Code__dev"
+      },
+      "human_author": "Developer <user@example.com>",
+      "messages": [],
+      "total_additions": 79,
+      "total_deletions": 18,
+      "accepted_lines": 79,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {
+    "src/components/ai-bot/ReportArea.tsx": [
+      {
+        "hash": "a97010b169ba442b",
+        "line_ranges": [
+          {
+            "Range": [
+              867,
+              917
+            ]
+          },
+          {
+            "Single": 1203
+          },
+          {
+            "Range": [
+              10518,
+              10533
+            ]
+          },
+          {
+            "Range": [
+              10585,
+              10587
+            ]
+          },
+          {
+            "Range": [
+              10659,
+              10662
+            ]
+          },
+          {
+            "Single": 10679
+          },
+          {
+            "Single": 10702
+          },
+          {
+            "Single": 10708
+          },
+          {
+            "Single": 10712
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a05bab0a26691104a928cc8",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Range": [
+                  867,
+                  917
+                ]
+              },
+              {
+                "Single": 1203
+              },
+              {
+                "Range": [
+                  10518,
+                  10533
+                ]
+              },
+              {
+                "Range": [
+                  10585,
+                  10587
+                ]
+              },
+              {
+                "Range": [
+                  10659,
+                  10662
+                ]
+              },
+              {
+                "Single": 10679
+              },
+              {
+                "Single": 10702
+              },
+              {
+                "Single": 10708
+              },
+              {
+                "Single": 10712
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "a97010b169ba442b": {
+      "tool": "trae",
+      "conversation_id": "6a058b2663c991a00c024aab",
+      "session_id": "6a058b2663c991a00c024aab",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
