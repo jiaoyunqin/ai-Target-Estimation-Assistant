@@ -6771,7 +6771,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     <div className="flex items-center gap-3 mb-2">
                       <div className="text-2xl">🏭</div>
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900">Step5：{industryContext?.industry}行业发货GMV分日预测</h2>
+                        <h2 className="text-xl font-bold text-gray-900">{industryContext?.industry}行业发货GMV分日预测</h2>
                         <p className="text-sm text-gray-500 mt-1">大促周期：2026.10.20-2026.11.11 | 所属行业：{industryContext?.industry}</p>
                       </div>
                     </div>
@@ -6845,7 +6845,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
                         ✏️
                       </div>
-                      行业场次系数配置（可修改）
+                      行业场次（行业侧配置）
                     </h3>
                     <div className="overflow-x-auto mb-4">
                       <table className="w-full text-sm">
@@ -6853,7 +6853,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <tr className="bg-gray-50">
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">场次类型</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">3C个性化系数</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">场次描述</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                           </tr>
@@ -6863,19 +6862,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             <tr key={idx} className="hover:bg-gray-50">
                               <td className="px-4 py-3 text-gray-700">{session.date}</td>
                               <td className="px-4 py-3 text-gray-900 font-medium">{session.type}</td>
-                              <td className="px-4 py-3">
-                                <input 
-                                  type="number" 
-                                  value={session.coeff} 
-                                  step={0.1}
-                                  onChange={(e) => {
-                                    const newData = [...industrySessionData];
-                                    newData[idx].coeff = parseFloat(e.target.value);
-                                    setIndustrySessionData(newData);
-                                  }}
-                                  className="w-20 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </td>
                               <td className="px-4 py-3 text-gray-600">{session.desc}</td>
                               <td className="px-4 py-3">
                                 <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ 编辑</button>
