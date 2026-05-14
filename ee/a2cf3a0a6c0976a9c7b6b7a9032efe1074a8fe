@@ -1,0 +1,291 @@
+src/components/ai-bot/ReportArea.tsx
+  a97010b169ba442b 11278,11292,11306,11321,11340,11354,11368,11383,11402,11416,11430,11445,11464,11478,11492,11507,11527,11541,11555,11570,11590,11604,11618,11633,11653,11667,11681,11696,11716,11730,11744,11759,11779,11793,11807,11822,11840,11854,11868,11883 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a05b8f4a26691104a928c8a","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Single":11278},{"Single":11292},{"Single":11306},{"Single":11321},{"Single":11340},{"Single":11354},{"Single":11368},{"Single":11383},{"Single":11402},{"Single":11416},{"Single":11430},{"Single":11445},{"Single":11464},{"Single":11478},{"Single":11492},{"Single":11507},{"Single":11527},{"Single":11541},{"Single":11555},{"Single":11570},{"Single":11590},{"Single":11604},{"Single":11618},{"Single":11633},{"Single":11653},{"Single":11667},{"Single":11681},{"Single":11696},{"Single":11716},{"Single":11730},{"Single":11744},{"Single":11759},{"Single":11779},{"Single":11793},{"Single":11807},{"Single":11822},{"Single":11840},{"Single":11854},{"Single":11868},{"Single":11883}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "eea2cf3a0a6c0976a9c7b6b7a9032efe1074a8fe",
+  "prompts": {
+    "a97010b169ba442b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a058b2663c991a00c024aab",
+        "model": "Doubao-Seed-2.0-Code__dev"
+      },
+      "human_author": "Developer <user@example.com>",
+      "messages": [],
+      "total_additions": 40,
+      "total_deletions": 0,
+      "accepted_lines": 40,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {
+    "src/components/ai-bot/ReportArea.tsx": [
+      {
+        "hash": "a97010b169ba442b",
+        "line_ranges": [
+          {
+            "Single": 11278
+          },
+          {
+            "Single": 11292
+          },
+          {
+            "Single": 11306
+          },
+          {
+            "Single": 11321
+          },
+          {
+            "Single": 11340
+          },
+          {
+            "Single": 11354
+          },
+          {
+            "Single": 11368
+          },
+          {
+            "Single": 11383
+          },
+          {
+            "Single": 11402
+          },
+          {
+            "Single": 11416
+          },
+          {
+            "Single": 11430
+          },
+          {
+            "Single": 11445
+          },
+          {
+            "Single": 11464
+          },
+          {
+            "Single": 11478
+          },
+          {
+            "Single": 11492
+          },
+          {
+            "Single": 11507
+          },
+          {
+            "Single": 11527
+          },
+          {
+            "Single": 11541
+          },
+          {
+            "Single": 11555
+          },
+          {
+            "Single": 11570
+          },
+          {
+            "Single": 11590
+          },
+          {
+            "Single": 11604
+          },
+          {
+            "Single": 11618
+          },
+          {
+            "Single": 11633
+          },
+          {
+            "Single": 11653
+          },
+          {
+            "Single": 11667
+          },
+          {
+            "Single": 11681
+          },
+          {
+            "Single": 11696
+          },
+          {
+            "Single": 11716
+          },
+          {
+            "Single": 11730
+          },
+          {
+            "Single": 11744
+          },
+          {
+            "Single": 11759
+          },
+          {
+            "Single": 11779
+          },
+          {
+            "Single": 11793
+          },
+          {
+            "Single": 11807
+          },
+          {
+            "Single": 11822
+          },
+          {
+            "Single": 11840
+          },
+          {
+            "Single": 11854
+          },
+          {
+            "Single": 11868
+          },
+          {
+            "Single": 11883
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a05b8f4a26691104a928c8a",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Single": 11278
+              },
+              {
+                "Single": 11292
+              },
+              {
+                "Single": 11306
+              },
+              {
+                "Single": 11321
+              },
+              {
+                "Single": 11340
+              },
+              {
+                "Single": 11354
+              },
+              {
+                "Single": 11368
+              },
+              {
+                "Single": 11383
+              },
+              {
+                "Single": 11402
+              },
+              {
+                "Single": 11416
+              },
+              {
+                "Single": 11430
+              },
+              {
+                "Single": 11445
+              },
+              {
+                "Single": 11464
+              },
+              {
+                "Single": 11478
+              },
+              {
+                "Single": 11492
+              },
+              {
+                "Single": 11507
+              },
+              {
+                "Single": 11527
+              },
+              {
+                "Single": 11541
+              },
+              {
+                "Single": 11555
+              },
+              {
+                "Single": 11570
+              },
+              {
+                "Single": 11590
+              },
+              {
+                "Single": 11604
+              },
+              {
+                "Single": 11618
+              },
+              {
+                "Single": 11633
+              },
+              {
+                "Single": 11653
+              },
+              {
+                "Single": 11667
+              },
+              {
+                "Single": 11681
+              },
+              {
+                "Single": 11696
+              },
+              {
+                "Single": 11716
+              },
+              {
+                "Single": 11730
+              },
+              {
+                "Single": 11744
+              },
+              {
+                "Single": 11759
+              },
+              {
+                "Single": 11779
+              },
+              {
+                "Single": 11793
+              },
+              {
+                "Single": 11807
+              },
+              {
+                "Single": 11822
+              },
+              {
+                "Single": 11840
+              },
+              {
+                "Single": 11854
+              },
+              {
+                "Single": 11868
+              },
+              {
+                "Single": 11883
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "a97010b169ba442b": {
+      "tool": "trae",
+      "conversation_id": "6a058b2663c991a00c024aab",
+      "session_id": "6a058b2663c991a00c024aab",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
