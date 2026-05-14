@@ -1,0 +1,75 @@
+src/components/ai-bot/ReportArea.tsx
+  a97010b169ba442b 10499,10648,10656,10658 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a05c535a26691104a928e01","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Single":10499},{"Single":10648},{"Single":10656},{"Single":10658}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "21a85a17b68d12980da5ec9e7cc612ea4477cb96",
+  "prompts": {
+    "a97010b169ba442b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a058b2663c991a00c024aab",
+        "model": "Doubao-Seed-2.0-Code__dev"
+      },
+      "human_author": "Developer <user@example.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {
+    "src/components/ai-bot/ReportArea.tsx": [
+      {
+        "hash": "a97010b169ba442b",
+        "line_ranges": [
+          {
+            "Single": 10499
+          },
+          {
+            "Single": 10648
+          },
+          {
+            "Single": 10656
+          },
+          {
+            "Single": 10658
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a05c535a26691104a928e01",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Single": 10499
+              },
+              {
+                "Single": 10648
+              },
+              {
+                "Single": 10656
+              },
+              {
+                "Single": 10658
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "a97010b169ba442b": {
+      "tool": "trae",
+      "conversation_id": "6a058b2663c991a00c024aab",
+      "session_id": "6a058b2663c991a00c024aab",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
