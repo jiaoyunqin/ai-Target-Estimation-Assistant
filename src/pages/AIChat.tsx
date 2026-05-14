@@ -25,6 +25,16 @@ export const AIChat: React.FC = () => {
   const [role, setRole] = useState<Role>('manager');
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   
+  // 行业身份管理
+  const [industryContext, setIndustryContext] = useState<{
+    industry: string;
+    industryId: string;
+    dataScope: string;
+  } | null>(null);
+  
+  // 商城频道管理
+  const [mallChannelTab, setMallChannelTab] = useState<'budget' | 'target' | 'monitor'>('target');
+  
   // Set default mode and state based on role
   const [mode, setMode] = useState<'scenario' | 'chat'>(role === 'manager' || role === 'leader' ? 'chat' : 'scenario');
   const [showReport, setShowReport] = useState(role === 'manager' || role === 'leader');
@@ -71,6 +81,7 @@ export const AIChat: React.FC = () => {
       setCurrentAgentName('电商预算钱效洞察');
       setReportType('manager_brief'); // Default manager report
       setIsSidebarCollapsed(false); // Keep sidebar open initially so user sees role changed
+      setIndustryContext(null); // 清除行业上下文
       
       // Optionally pre-fill a message to explain the context
       setMessages([
@@ -88,6 +99,12 @@ export const AIChat: React.FC = () => {
       setCurrentAgentName('预算钱效洞察');
       setReportType('budget_attribution'); // Use budget attribution report for Leader
       setIsSidebarCollapsed(false);
+      // 绑定业务Leader的行业身份
+      setIndustryContext({
+        industry: '3C数码',
+        industryId: 'IND003',
+        dataScope: '仅限本行业'
+      });
       
       setMessages([
         {
@@ -104,6 +121,7 @@ export const AIChat: React.FC = () => {
       setCurrentAgentName('Data Agent');
       setReportType('default');
       setIsSidebarCollapsed(false);
+      setIndustryContext(null); // 清除行业上下文
       setMessages([]);
     }
   }, [role]);
@@ -610,6 +628,8 @@ export const AIChat: React.FC = () => {
                      onTotalBudgetChange={setTotalBudget}
                      promotionType={promotionType}
                      onPromotionTypeChange={handlePromotionTypeChange}
+                     industryContext={industryContext}
+                     role={role}
                      onTabChange={(tab) => {
                        if (tab === '平台活动' || tab === '大促') {
                          setCurrentAgentName('大促AI预算助手');
@@ -632,6 +652,31 @@ export const AIChat: React.FC = () => {
                            timestamp: new Date(),
                            showReportAction: true
                          }]);
+                       } else if (tab === '商城频道') {
+                         // 处理商城频道点击
+                         if (role === 'leader' && industryContext) {
+                           // 行业Leader身份，显示专属页面
+                           setCurrentAgentName('大促AI预算助手');
+                           setReportType('promotion_budget');
+                           setShowReport(true);
+                           setMessages([{
+                             id: 'init-mall-channel',
+                             role: 'assistant',
+                             content: `欢迎使用${industryContext.industry}行业商城频道预算助手。已为您加载目标测算功能。`,
+                             timestamp: new Date(),
+                             showReportAction: true
+                           }]);
+                         } else {
+                           // 非行业角色，跳转到通用页面
+                           setCurrentAgentName('预算钱效洞察');
+                           setReportType('budget_attribution');
+                           setMessages([{
+                             id: 'init-mall-fallback',
+                             role: 'assistant',
+                             content: '商城频道功能仅对行业负责人开放，请切换身份后使用。',
+                             timestamp: new Date()
+                           }]);
+                         }
                        }
                      }}
                    />

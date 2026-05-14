@@ -24,9 +24,15 @@ interface ChatAreaProps {
   onTabChange?: (tab: string) => void;
   promotionType?: string;
   onPromotionTypeChange?: (type: string) => void;
+  industryContext?: {
+    industry: string;
+    industryId: string;
+    dataScope: string;
+  } | null;
+  role?: 'manager' | 'leader' | 'bp' | 'finance_bp';
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onNewChat, onShowReport, agentName = 'Data Agent', onAddToReport, totalBudget = 5000, onTotalBudgetChange, onTabChange, promotionType: propPromotionType, onPromotionTypeChange }) => {
+export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onNewChat, onShowReport, agentName = 'Data Agent', onAddToReport, totalBudget = 5000, onTotalBudgetChange, onTabChange, promotionType: propPromotionType, onPromotionTypeChange, industryContext, role }) => {
   const [input, setInput] = useState('');
   const [expandedThinking, setExpandedThinking] = useState(true); // State for collapsible thinking section
   const [budgetConfigOpen, setBudgetConfigOpen] = useState(true);
@@ -181,6 +187,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
     '短视频转化超预期，帮我判断要不要加投',
     '帮我总结一下这次预算调整的核心结论，给老板汇报用'
   ];
+  
+  // 3C数码行业Leader专属的推荐追问
+  const industryLeaderFollowUpQuestions = [
+    '帮我查看3C数码行业发货GMV目标',
+    '帮我评估3C场次系数是否合理',
+    '分析618期间3C数码行业流量大盘趋势',
+    '对比竞品在3C数码领域的预算投入策略',
+    '评估手机品类的投放ROI是否达标'
+  ];
 
   const followUpQuestions = isPromotionAgent
     ? promotionFollowUpQuestions
@@ -192,7 +207,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
           ? roiAttributionFollowUpQuestions 
           : isManagerBriefAgent 
             ? managerFollowUpQuestions 
-            : leaderFollowUpQuestions;
+            : (industryContext ? industryLeaderFollowUpQuestions : leaderFollowUpQuestions);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -247,7 +262,41 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
               <span className="font-bold text-gray-800">{agentName}</span>
           </div>
         </div>
+        {/* 身份标签 */}
+        {industryContext && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-blue-600 text-xs">📌</span>
+            <span className="text-xs font-medium text-blue-700">当前身份：{industryContext.industry}</span>
+          </div>
+        )}
       </div>
+      
+      {/* 商城频道子导航（仅在商城频道和行业Leader身份时显示） */}
+      {industryContext && activeTab === '商城频道' && (
+        <div className="flex items-center px-4 bg-gray-50 border-b border-gray-200">
+          {['预算测算&调配', '目标测算', '促中监控'].map((subTab, index) => (
+            <button
+              key={subTab}
+              onClick={() => {
+                // 这里可以添加子标签的处理逻辑
+                if (subTab === '目标测算') {
+                  // 目标测算被选中，可以触发相关逻辑
+                }
+              }}
+              className={`px-4 py-2.5 text-sm font-medium transition-all relative ${
+                index === 1 // 默认选中"目标测算"
+                  ? 'text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {subTab}
+              {index === 1 && (
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative">
