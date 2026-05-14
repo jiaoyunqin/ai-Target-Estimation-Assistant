@@ -8773,7 +8773,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-5 h-5 text-green-600" />
-                            <span className="text-sm font-medium text-green-800">全链路目标已锁定，您可点击右上角“分享”按钮，导出报告或直接分享此测算链接。</span>
+                              <span className="text-sm font-medium text-green-800">全链路目标已锁定，您可点击右上角"分享"按钮，导出报告或直接分享此测算链接。</span>
+                            </div>
+                            <button className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                              <Database className="w-4 h-4" />
+                              导出CRM数据
+                            </button>
                           </div>
                         </div>
                       )}
