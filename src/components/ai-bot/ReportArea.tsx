@@ -1411,6 +1411,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [showStep4Formula, setShowStep4Formula] = useState(false);
   const [showCalculationDetail, setShowCalculationDetail] = useState<number | null>(null);
   const [expandedReference, setExpandedReference] = useState(false);
+  const [tableDisplayMode, setTableDisplayMode] = useState<'daily' | 'phase'>('daily');
   
   // 动态发货率数据（每日不同）
   const [dailyShipmentRates, setDailyShipmentRates] = useState([
@@ -9769,21 +9770,43 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                       测算过程明细
                     </h3>
-                    <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                      </svg>
-                      导出明细
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setTableDisplayMode('daily')}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                            tableDisplayMode === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          分日视图
+                        </button>
+                        <button
+                          onClick={() => setTableDisplayMode('phase')}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                            tableDisplayMode === 'phase' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          按阶段汇总
+                        </button>
+                      </div>
+                      <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        导出明细
+                      </button>
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 text-gray-600 font-medium">
                         <tr>
-                          <th className="text-left py-3 px-4">日期</th>
-                          <th className="text-left py-3 px-4">阶段</th>
+                          <th className="text-left py-3 px-4">{tableDisplayMode === 'daily' ? '日期' : '阶段'}</th>
+                          {tableDisplayMode === 'daily' && (
+                            <th className="text-left py-3 px-4">阶段</th>
+                          )}
                           <th className="text-right py-3 px-4">自然水位支付GMV（万）</th>
                           {stepCalculated[2] && (
                             <th className="text-right py-3 px-4">含预算预测支付GMV（万）</th>
@@ -9794,45 +9817,104 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {[
-                          { date: '10/31', phase: '预售期', natural: 2187, budget: 2734, delivery: 2460 },
-                          { date: '11/01', phase: '预热期', natural: 2721, budget: 3401, delivery: 3061 },
-                          { date: '11/02', phase: '预热期', natural: 1500, budget: 1875, delivery: 1688 },
-                          { date: '11/11', phase: '爆发期', natural: 6163, budget: 8628, delivery: 7765 },
-                          { date: '11/12', phase: '返场期', natural: 1300, budget: 1625, delivery: 1463 },
-                          { date: '11/13', phase: '返场期', natural: 1077, budget: 1346, delivery: 1211 },
-                        ].map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium text-gray-900">{item.date}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                item.phase === '爆发期' ? 'bg-red-100 text-red-700' :
-                                item.phase === '预售期' ? 'bg-purple-100 text-purple-700' :
-                                item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {item.phase}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
-                            {stepCalculated[2] && (
-                              <td className="py-3 px-4 text-right text-gray-700">{item.budget.toLocaleString()}</td>
-                            )}
-                            {stepCalculated[3] && (
-                              <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">{item.delivery.toLocaleString()}</td>
-                            )}
-                          </tr>
-                        ))}
-                        <tr className="bg-gray-50 font-bold">
-                          <td className="py-3 px-4 text-gray-800" colSpan={2}>合计</td>
-                          <td className="py-3 px-4 text-right text-gray-900">14,948</td>
-                          {stepCalculated[2] && (
-                            <td className="py-3 px-4 text-right text-gray-900">19,609</td>
-                          )}
-                          {stepCalculated[3] && (
-                            <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">17,648</td>
-                          )}
-                        </tr>
+                        {(() => {
+                          const dailyData = [
+                            { date: '06/15', phase: '预热期', natural: 2200, budget: 2750, delivery: 2475 },
+                            { date: '06/16', phase: '预热期', natural: 2400, budget: 3000, delivery: 2700 },
+                            { date: '06/17', phase: '预热期', natural: 2600, budget: 3250, delivery: 2925 },
+                            { date: '06/18', phase: '爆发期', natural: 5800, budget: 8120, delivery: 7308 },
+                            { date: '06/19', phase: '返场期', natural: 3100, budget: 3875, delivery: 3488 },
+                            { date: '06/20', phase: '返场期', natural: 2800, budget: 3500, delivery: 3150 },
+                          ];
+
+                          if (tableDisplayMode === 'daily') {
+                            return (
+                              <>
+                                {dailyData.map((item, index) => (
+                                  <tr key={index} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4 font-medium text-gray-900">{item.date}</td>
+                                    <td className="py-3 px-4">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        item.phase === '爆发期' ? 'bg-red-100 text-red-700' :
+                                        item.phase === '预售期' ? 'bg-purple-100 text-purple-700' :
+                                        item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {item.phase}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
+                                    {stepCalculated[2] && (
+                                      <td className="py-3 px-4 text-right text-gray-700">{item.budget.toLocaleString()}</td>
+                                    )}
+                                    {stepCalculated[3] && (
+                                      <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">{item.delivery.toLocaleString()}</td>
+                                    )}
+                                  </tr>
+                                ))}
+                                <tr className="bg-gray-50 font-bold">
+                                  <td className="py-3 px-4 text-gray-800" colSpan={2}>合计</td>
+                                  <td className="py-3 px-4 text-right text-gray-900">18,900</td>
+                                  {stepCalculated[2] && (
+                                    <td className="py-3 px-4 text-right text-gray-900">24,495</td>
+                                  )}
+                                  {stepCalculated[3] && (
+                                    <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">22,046</td>
+                                  )}
+                                </tr>
+                              </>
+                            );
+                          } else {
+                            // 按阶段汇总数据
+                            const phaseData = dailyData.reduce((acc, item) => {
+                              const existing = acc.find(p => p.phase === item.phase);
+                              if (existing) {
+                                existing.natural += item.natural;
+                                existing.budget += item.budget;
+                                existing.delivery += item.delivery;
+                              } else {
+                                acc.push({ ...item });
+                              }
+                              return acc;
+                            }, [] as typeof dailyData);
+
+                            return (
+                              <>
+                                {phaseData.map((item, index) => (
+                                  <tr key={index} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4 font-medium text-gray-900">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        item.phase === '爆发期' ? 'bg-red-100 text-red-700' :
+                                        item.phase === '预售期' ? 'bg-purple-100 text-purple-700' :
+                                        item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {item.phase}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
+                                    {stepCalculated[2] && (
+                                      <td className="py-3 px-4 text-right text-gray-700">{item.budget.toLocaleString()}</td>
+                                    )}
+                                    {stepCalculated[3] && (
+                                      <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">{item.delivery.toLocaleString()}</td>
+                                    )}
+                                  </tr>
+                                ))}
+                                <tr className="bg-gray-50 font-bold">
+                                  <td className="py-3 px-4 text-gray-800">合计</td>
+                                  <td className="py-3 px-4 text-right text-gray-900">18,900</td>
+                                  {stepCalculated[2] && (
+                                    <td className="py-3 px-4 text-right text-gray-900">24,495</td>
+                                  )}
+                                  {stepCalculated[3] && (
+                                    <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">22,046</td>
+                                  )}
+                                </tr>
+                              </>
+                            );
+                          }
+                        })()}
                       </tbody>
                     </table>
                   </div>
