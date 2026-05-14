@@ -10665,6 +10665,83 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       </div>
                     </div>
                   </div>
+                  
+                  {/* 堆叠柱状图 - 与上方图表联动 */}
+                  <div className="mt-6">
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          行业分日构成（堆叠）
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {selectedDashboardIndustry === 'total' ? '大盘视角：各一级行业构成' : `${dashboardMockData[selectedDashboardIndustry]?.series.find(s => s.isMain)?.name || '行业'}视角：各二级行业构成`}
+                        </p>
+                      </div>
+                      <div className="h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={(() => {
+                              const currentData = dashboardMockData[selectedDashboardIndustry] || dashboardMockData['total'];
+                              return currentData.xAxis.map(date => {
+                                const dataPoint: any = { day: date };
+                                currentData.series.forEach(series => {
+                                  if (!series.isReference && !(selectedDashboardIndustry === 'total' && series.name === '大盘总计')) {
+                                    const point = series.trendData.find(d => d.date === date);
+                                    dataPoint[series.name] = point ? point.value : 0;
+                                  }
+                                });
+                                return dataPoint;
+                              });
+                            })()}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} unit="万" />
+                            <Tooltip
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  let total = 0;
+                                  payload.forEach((p: any) => { total += p.value; });
+                                  return (
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
+                                      <p className="font-bold text-gray-800 mb-2">{label} - 总计: {total}万</p>
+                                      {payload.map((entry: any, index: number) => (
+                                        <p key={index} className="flex items-center gap-2">
+                                          <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: entry.color }}></span>
+                                          <span className="text-gray-600">{entry.name}：</span>
+                                          <span className="font-bold text-gray-900">{entry.value}</span>
+                                          <span className="text-gray-500">万</span>
+                                          <span className="text-gray-400">({((entry.value / total) * 100).toFixed(1)}%)</span>
+                                        </p>
+                                      ))}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            {(() => {
+                              const currentData = dashboardMockData[selectedDashboardIndustry] || dashboardMockData['total'];
+                              return currentData.series
+                                .filter(series => !series.isReference && !(selectedDashboardIndustry === 'total' && series.name === '大盘总计'))
+                                .map((series) => (
+                                  <Bar
+                                    key={series.name}
+                                    dataKey={series.name}
+                                    stackId="a"
+                                    fill={series.color}
+                                    name={series.name}
+                                    radius={[4, 4, 0, 0]}
+                                  />
+                                ));
+                            })()}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
