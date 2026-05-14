@@ -372,6 +372,23 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     { date: '11/12', type: '返场期', coeff: 1.1, desc: '3C数码专属返场' },
   ]);
   const [businessLeaderTab, setBusinessLeaderTab] = useState<'full' | 'detail' | 'daily' | 'session'>('daily');
+
+  // 3C行业趋势图数据
+  const trendChartData = [
+    { date: '10/31', total: 2187, phone: 1100, computer: 700, accessory: 387, growth: '+12%', factor: '预售首日流量红利' },
+    { date: '11/01', total: 2721, phone: 1500, computer: 800, accessory: 421, growth: '+18%', factor: '3C品类日中场带动' },
+    { date: '11/10', total: 1500, phone: 800, computer: 450, accessory: 250, growth: '+10%', factor: '第二波预售预热' },
+    { date: '11/11', total: 6163, phone: 3500, computer: 2000, accessory: 663, growth: '+21%', factor: '全品类爆发日' },
+    { date: '11/12', total: 1300, phone: 700, computer: 400, accessory: 200, growth: '+8%', factor: '3C专属返场补贴' },
+    { date: '其他日期', total: 1077, phone: 574, computer: 334, accessory: 169, growth: '+5%', factor: '日常售卖' },
+  ];
+
+  // 3C行业饼图数据
+  const pieChartData = [
+    { name: '手机', value: 7474, ratio: '50%', color: '#2563EB' },
+    { name: '电脑整机', value: 4484, ratio: '30%', color: '#60A5FA' },
+    { name: '数码配件', value: 2990, ratio: '20%', color: '#8B5CF6' },
+  ];
   
   // 更详细的场次数据，支持分行业系数
   const [detailedSessionData, setDetailedSessionData] = useState([
@@ -6958,14 +6975,103 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <option>3C数码</option>
                             </select>
                           </div>
-                          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                            趋势图区域
+                          <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={trendChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} unit="万" domain={[0, 7000]} />
+                                <Tooltip
+                                  content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      const dataPoint = trendChartData.find(d => d.date === label);
+                                      return (
+                                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                                          <p className="text-sm font-semibold text-gray-900 mb-2">日期：{label}</p>
+                                          <p className="text-sm text-gray-700 mb-1">
+                                            3C总计：<span className="font-semibold text-blue-600">{dataPoint?.total.toLocaleString()}万</span>
+                                          </p>
+                                          <p className="text-sm text-gray-700 mb-1">
+                                            同比：<span className="font-semibold text-green-600">{dataPoint?.growth}</span>
+                                          </p>
+                                          <p className="text-sm text-gray-700">
+                                            影响因素：<span className="text-gray-500">{dataPoint?.factor}</span>
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="total" 
+                                  stroke="#2563EB" 
+                                  strokeWidth={3} 
+                                  dot={{ r: 4, fill: '#2563EB' }} 
+                                  name="3C数码总计"
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="phone" 
+                                  stroke="#3B82F6" 
+                                  strokeWidth={2} 
+                                  strokeDasharray="5 5"
+                                  dot={{ r: 3, fill: '#3B82F6' }} 
+                                  name="手机"
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="computer" 
+                                  stroke="#60A5FA" 
+                                  strokeWidth={2} 
+                                  strokeDasharray="3 3"
+                                  dot={{ r: 3, fill: '#60A5FA' }} 
+                                  name="电脑整机"
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="accessory" 
+                                  stroke="#8B5CF6" 
+                                  strokeWidth={2} 
+                                  strokeDasharray="5 5"
+                                  dot={{ r: 3, fill: '#8B5CF6' }} 
+                                  name="数码配件"
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
                         <div>
                           <div className="text-sm font-medium text-gray-700 mb-4">全周期3C数码子赛道结构</div>
-                          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                            饼图区域
+                          <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={pieChartData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={50}
+                                  outerRadius={75}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {pieChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => `${value.toLocaleString()}万`} />
+                                <Legend formatter={(value, entry, index) => {
+                                  const data = pieChartData[index];
+                                  return (
+                                    <span style={{ fontSize: '12px' }}>
+                                      {value} ({data.ratio})
+                                    </span>
+                                  );
+                                }} />
+                              </PieChart>
+                            </ResponsiveContainer>
                           </div>
                           <div className="mt-4 text-center">
                             <div className="text-lg font-bold text-gray-800">总发货GMV：14,948万</div>
