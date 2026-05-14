@@ -713,6 +713,8 @@ export const AIChat: React.FC = () => {
                         budgetCommand={budgetCommand}
                         totalBudget={totalBudget}
                         onTotalBudgetChange={setTotalBudget}
+                        role={role}
+                        industryContext={industryContext}
                     />
                   </div>
                 )}

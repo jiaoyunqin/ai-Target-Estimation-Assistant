@@ -19,9 +19,19 @@ interface ReportAreaProps {
   totalBudget?: number;
   onTotalBudgetChange?: (value: number) => void;
   promotionType?: string; // 当前大促类型，用于联动历史参考数据和图表
+  role?: 'manager' | 'leader' | 'bp' | 'finance_bp'; // 角色身份
+  industryContext?: { // 行业上下文
+    industry: string;
+    industryId: string;
+    dataScope: string;
+  } | null;
 }
 
-export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'default', reportSidebarWidth, onResizeStart, aiContentMode = 'default', showNewConclusion = false, budgetCommand, totalBudget: propTotalBudget, onTotalBudgetChange, promotionType = '618' }) => {
+export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'default', reportSidebarWidth, onResizeStart, aiContentMode = 'default', showNewConclusion = false, budgetCommand, totalBudget: propTotalBudget, onTotalBudgetChange, promotionType = '618', role, industryContext }) => {
+  
+  // 判断是否是业务Leader视角（简化UI）
+  const isBusinessLeader = role === 'leader' && industryContext !== null;
+  const isPromotionBudgetPage = reportType === 'promotion_budget';
   
   // 根据大促类型获取对应的历史参考数据配置
   const getPromotionConfig = (type: string) => {
@@ -352,6 +362,16 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [editingCoeff, setEditingCoeff] = useState<{date: string, industry: string} | null>(null);
   const [sessionVersionHistory, setSessionVersionHistory] = useState<any[]>([]);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  
+  // 业务Leader视角专属状态
+  const [industrySessionData, setIndustrySessionData] = useState([
+    { date: '10/31', type: '预售第一波', coeff: 1.2, desc: '3C数码预售首日' },
+    { date: '11/01', type: '3C品类日', coeff: 1.4, desc: '超级品牌日专场' },
+    { date: '11/10', type: '预售第二波', coeff: 1.3, desc: '全品类预售爆发' },
+    { date: '11/11', type: '大促正日', coeff: 1.5, desc: '全品类爆发日' },
+    { date: '11/12', type: '返场期', coeff: 1.1, desc: '3C数码专属返场' },
+  ]);
+  const [businessLeaderTab, setBusinessLeaderTab] = useState<'full' | 'detail' | 'daily' | 'session'>('daily');
   
   // 更详细的场次数据，支持分行业系数
   const [detailedSessionData, setDetailedSessionData] = useState([
@@ -6742,6 +6762,360 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               {/* 测算目标 Tab 内容 */}
               {targetTab === 'calculation' && (
               <>
+              {/* 根据角色身份显示不同的UI */}
+              {isBusinessLeader ? (
+                // 业务Leader视角 - 简化UI，专注于3C行业
+                <div className="space-y-6">
+                  {/* Step5 标题和大促周期 */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="text-2xl">🏭</div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">Step5：{industryContext?.industry}行业发货GMV分日预测</h2>
+                        <p className="text-sm text-gray-500 mt-1">大促周期：2026.10.20-2026.11.11 | 所属行业：{industryContext?.industry}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 区块一：资管下发目标（只读区） */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        📥
+                      </div>
+                      资管下发目标（不可修改）
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">层级</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">赛道名称</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">全周期目标（万）</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">预热期（万）</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">爆发期（万）</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">返场期（万）</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          <tr className="bg-blue-50">
+                            <td className="px-4 py-3 text-gray-700 font-medium">一级</td>
+                            <td className="px-4 py-3 text-gray-900 font-medium">3C数码</td>
+                            <td className="px-4 py-3 text-gray-700">14,948</td>
+                            <td className="px-4 py-3 text-gray-700">3,289</td>
+                            <td className="px-4 py-3 text-gray-700">8,221</td>
+                            <td className="px-4 py-3 text-gray-700">3,438</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 text-gray-700">二级</td>
+                            <td className="px-4 py-3 text-gray-900">手机</td>
+                            <td className="px-4 py-3 text-gray-700">7,474</td>
+                            <td className="px-4 py-3 text-gray-700">1,579</td>
+                            <td className="px-4 py-3 text-gray-700">4,111</td>
+                            <td className="px-4 py-3 text-gray-700">1,784</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 text-gray-700">二级</td>
+                            <td className="px-4 py-3 text-gray-900">电脑整机</td>
+                            <td className="px-4 py-3 text-gray-700">4,484</td>
+                            <td className="px-4 py-3 text-gray-700">987</td>
+                            <td className="px-4 py-3 text-gray-700">2,466</td>
+                            <td className="px-4 py-3 text-gray-700">1,031</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 text-gray-700">二级</td>
+                            <td className="px-4 py-3 text-gray-900">数码配件</td>
+                            <td className="px-4 py-3 text-gray-700">2,990</td>
+                            <td className="px-4 py-3 text-gray-700">723</td>
+                            <td className="px-4 py-3 text-gray-700">1,644</td>
+                            <td className="px-4 py-3 text-gray-700">623</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-700">✅ 目标校验通过，所有金额由资管统一分配，若有调整需求请联系资管侧</span>
+                    </div>
+                  </div>
+                  
+                  {/* 区块二：行业场次信息录入（可编辑区） */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        ✏️
+                      </div>
+                      行业场次系数配置（可修改）
+                    </h3>
+                    <div className="overflow-x-auto mb-4">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">场次类型</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">3C个性化系数</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">场次描述</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {industrySessionData.map((session, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-gray-700">{session.date}</td>
+                              <td className="px-4 py-3 text-gray-900 font-medium">{session.type}</td>
+                              <td className="px-4 py-3">
+                                <input 
+                                  type="number" 
+                                  value={session.coeff} 
+                                  step={0.1}
+                                  onChange={(e) => {
+                                    const newData = [...industrySessionData];
+                                    newData[idx].coeff = parseFloat(e.target.value);
+                                    setIndustrySessionData(newData);
+                                  }}
+                                  className="w-20 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-gray-600">{session.desc}</td>
+                              <td className="px-4 py-3">
+                                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ 编辑</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                        <Save className="w-4 h-4" />
+                        保存配置
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        <Search className="w-4 h-4" />
+                        预览测算结果
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* 区块三：AI预测结果（3C行业专属） */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                        🤖
+                      </div>
+                      AI预测结果
+                    </h3>
+                    
+                    {/* 第一部分：目标设定与评估 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <div className="text-sm text-gray-500 mb-3 font-medium">目标设定与评估</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                          <div className="text-xs text-blue-600 mb-1">3C目标发货GMV</div>
+                          <div className="text-2xl font-bold text-blue-900">14,948万</div>
+                          <div className="text-xs text-blue-500 mt-1">资管设定目标，不可修改</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                          <div className="text-xs text-orange-600 mb-1">人工设定增量目标</div>
+                          <div className="text-2xl font-bold text-orange-900">+3,670万</div>
+                          <div className="text-xs text-orange-500 mt-1">同比增幅 +31%</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
+                          <div className="text-xs text-red-600 mb-1">目标差值(Gap)</div>
+                          <div className="text-2xl font-bold text-red-900">3,470万</div>
+                          <div className="text-xs text-red-500 mt-1">完成率 78%</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                          <div className="text-xs text-green-600 mb-1">目标达成概率</div>
+                          <div className="text-2xl font-bold text-green-900">92%</div>
+                          <div className="text-xs text-green-500 mt-1">基于场次系数和历史转化率测算</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                          <div className="text-xs text-green-600 mb-1">整体同比增速</div>
+                          <div className="text-2xl font-bold text-green-900">支付 +15.2% / 发货 +14%</div>
+                          <div className="text-xs text-green-500 mt-1">较2025年同量级大促</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 第二部分：系统预测数据 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <div className="text-sm text-gray-500 mb-3 font-medium">系统预测</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                          <div className="text-xs text-gray-500 mb-1">3C自然水位发货GMV</div>
+                          <div className="text-2xl font-bold text-gray-800">11,800万</div>
+                          <div className="text-xs text-gray-400 mt-1">不投预算、无场次下的预测基线</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                          <div className="text-xs text-gray-500 mb-1">含场次系数预测发货GMV</div>
+                          <div className="text-2xl font-bold text-gray-800">14,948万</div>
+                          <div className="text-xs text-gray-400 mt-1">叠加场次调整后的最终预测水位</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                          <div className="text-xs text-gray-500 mb-1">T+2预计发货占比</div>
+                          <div className="text-2xl font-bold text-gray-800">90%</div>
+                          <div className="text-xs text-gray-400 mt-1">基于3C行业历史发货效率测算</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 第三部分：趋势图+行业结构 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-sm font-medium text-gray-700">3C发货GMV分日趋势图</span>
+                            <select className="px-3 py-1 border border-gray-300 rounded-lg text-sm bg-white">
+                              <option>3C数码</option>
+                            </select>
+                          </div>
+                          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                            趋势图区域
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-4">全周期3C数码子赛道结构</div>
+                          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                            饼图区域
+                          </div>
+                          <div className="mt-4 text-center">
+                            <div className="text-lg font-bold text-gray-800">总发货GMV：14,948万</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 第四部分：底部数据表格 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      {/* Tab 切换 */}
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-6">
+                        <button
+                          onClick={() => setBusinessLeaderTab('full')}
+                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'full' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          3C全阶段
+                        </button>
+                        <button
+                          onClick={() => setBusinessLeaderTab('detail')}
+                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'detail' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          二级行业明细
+                        </button>
+                        <button
+                          onClick={() => setBusinessLeaderTab('daily')}
+                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          分日预测明细
+                        </button>
+                        <button
+                          onClick={() => setBusinessLeaderTab('session')}
+                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          场次效果
+                        </button>
+                      </div>
+                      
+                      {/* 分日预测明细 */}
+                      {businessLeaderTab === 'daily' && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-gray-50">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">阶段</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">3C发货GMV（万）</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">占全周期比例</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同比增速</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">影响因素</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">10/31</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">预售期</td>
+                                <td className="px-4 py-3 text-gray-700">2,187</td>
+                                <td className="px-4 py-3 text-gray-600">14.6%</td>
+                                <td className="px-4 py-3 text-green-600">+12%</td>
+                                <td className="px-4 py-3 text-gray-600">预售首日流量红利</td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">11/01</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">预热期</td>
+                                <td className="px-4 py-3 text-gray-700">2,721</td>
+                                <td className="px-4 py-3 text-gray-600">18.2%</td>
+                                <td className="px-4 py-3 text-green-600">+18%</td>
+                                <td className="px-4 py-3 text-gray-600">3C品类日中场带动</td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">11/10</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">预售期</td>
+                                <td className="px-4 py-3 text-gray-700">1,500</td>
+                                <td className="px-4 py-3 text-gray-600">10%</td>
+                                <td className="px-4 py-3 text-green-600">+10%</td>
+                                <td className="px-4 py-3 text-gray-600">第二波预售预热</td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">11/11</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">爆发期</td>
+                                <td className="px-4 py-3 text-gray-700">6,163</td>
+                                <td className="px-4 py-3 text-gray-600">41.2%</td>
+                                <td className="px-4 py-3 text-green-600">+21%</td>
+                                <td className="px-4 py-3 text-gray-600">全品类大场+3C专属补贴</td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">11/12</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">返场期</td>
+                                <td className="px-4 py-3 text-gray-700">1,300</td>
+                                <td className="px-4 py-3 text-gray-600">8.7%</td>
+                                <td className="px-4 py-3 text-green-600">+8%</td>
+                                <td className="px-4 py-3 text-gray-600">3C专属返场补贴</td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-gray-700">其他日期</td>
+                                <td className="px-4 py-3 text-gray-900 font-medium">平销期</td>
+                                <td className="px-4 py-3 text-gray-700">1,077</td>
+                                <td className="px-4 py-3 text-gray-600">7.2%</td>
+                                <td className="px-4 py-3 text-green-600">+5%</td>
+                                <td className="px-4 py-3 text-gray-600">日常售卖</td>
+                              </tr>
+                              <tr className="bg-blue-50">
+                                <td className="px-4 py-3 text-gray-900 font-bold">合计</td>
+                                <td className="px-4 py-3 text-gray-900">-</td>
+                                <td className="px-4 py-3 text-gray-900 font-bold">14,948</td>
+                                <td className="px-4 py-3 text-gray-900 font-bold">100%</td>
+                                <td className="px-4 py-3 text-green-700 font-bold">+14%</td>
+                                <td className="px-4 py-3 text-gray-700">与资管下发目标完全对齐</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      
+                      {/* 其他Tab内容（占位） */}
+                      {businessLeaderTab !== 'daily' && (
+                        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                          {businessLeaderTab === 'full' ? '3C全阶段数据' : 
+                           businessLeaderTab === 'detail' ? '二级行业明细数据' : 
+                           '场次效果数据'}
+                        </div>
+                      )}
+                      
+                      {/* 导出按钮 */}
+                      <div className="mt-4 flex justify-end">
+                        <button className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                          <Database className="w-4 h-4" />
+                          导出行业数据明细
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // 原来的资管视角UI
+                <>
               {/* 目标测算步骤流程 */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -10465,6 +10839,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     </div>
                   </div>
                 </div>
+              )}
+              </>
               )}
               </>
               )}
