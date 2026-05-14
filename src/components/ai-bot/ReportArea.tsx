@@ -10496,7 +10496,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
                           </div>
                         </div>
-                        <div className="h-52">
+                        <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             {/* 普通视图模式 */}
                             <ComposedChart 
@@ -10645,7 +10645,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           </div>
                           
                           {/* 总 GMV 显示 */}
-                          <div className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg transition-all duration-300">
+                          <div className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg transition-all duration-300" style={{ height: '72px' }}>
                             <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
                             <p className="text-xl font-bold text-gray-900">{getRightPanelData(selectedPoint).totalGmv.toLocaleString()}万</p>
                           </div>
@@ -10653,9 +10653,9 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           {/* 二级行业数据列表 */}
                           <div className="transition-opacity duration-300">
                             <p className="text-xs text-gray-600 mb-2">行业明细：</p>
-                            <div className="space-y-2">
+                            <div className="space-y-2" style={{ height: 'auto' }}>
                               {getRightPanelData(selectedPoint).children.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-all duration-200">
+                                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-all duration-200" style={{ height: '20px' }}>
                                   <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
                                     <span className="text-xs font-medium text-gray-800">{item.name}</span>
