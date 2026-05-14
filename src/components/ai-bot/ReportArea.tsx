@@ -7495,6 +7495,16 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           )}
                         </table>
                       </div>
+                      <div className="flex justify-end mt-4">
+                        <button className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                            <path d="M3 12A9 3 0 0 0 21 12"></path>
+                          </svg>
+                          导出行业数据明细
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
