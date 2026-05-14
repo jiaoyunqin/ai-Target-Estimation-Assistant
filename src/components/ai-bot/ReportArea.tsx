@@ -11275,6 +11275,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,750</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,808</span>
+                                    <span className="text-gray-400 text-xs">（+3%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11288,6 +11289,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,720</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,863</span>
+                                    <span className="text-gray-400 text-xs">（+8%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11301,6 +11303,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,290</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>1,277</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11315,6 +11318,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">4,760</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>4,948</span>
+                                    <span className="text-gray-400 text-xs">（+4%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11333,6 +11337,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">910</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>930</span>
+                                    <span className="text-gray-400 text-xs">（+2%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11346,6 +11351,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">900</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>960</span>
+                                    <span className="text-gray-400 text-xs">（+7%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11359,6 +11365,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">680</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>684</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11373,6 +11380,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">2,490</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>2,574</span>
+                                    <span className="text-gray-400 text-xs">（+3%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11391,6 +11399,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">540</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>560</span>
+                                    <span className="text-gray-400 text-xs">（+4%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11404,6 +11413,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">550</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>590</span>
+                                    <span className="text-gray-400 text-xs">（+7%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11417,6 +11427,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">400</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>394</span>
+                                    <span className="text-gray-400 text-xs">（-2%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11431,6 +11442,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,490</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,544</span>
+                                    <span className="text-gray-400 text-xs">（+4%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11449,6 +11461,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">300</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>318</span>
+                                    <span className="text-gray-400 text-xs">（+6%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11462,6 +11475,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">270</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>313</span>
+                                    <span className="text-gray-400 text-xs">（+16%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11475,6 +11489,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">210</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>199</span>
+                                    <span className="text-gray-400 text-xs">（-5%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11489,6 +11504,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">780</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>830</span>
+                                    <span className="text-gray-400 text-xs">（+6%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11508,6 +11524,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,140</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>1,150</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11521,6 +11538,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,200</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,238</span>
+                                    <span className="text-gray-400 text-xs">（+3%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11534,6 +11552,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">830</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>795</span>
+                                    <span className="text-gray-400 text-xs">（-4%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11548,6 +11567,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">3,170</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>3,183</span>
+                                    <span className="text-gray-400 text-xs">（+0%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11567,6 +11587,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,270</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>1,269</span>
+                                    <span className="text-gray-400 text-xs">（-0%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11580,6 +11601,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,350</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,365</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11593,6 +11615,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">950</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>940</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11607,6 +11630,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">3,570</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>3,574</span>
+                                    <span className="text-gray-400 text-xs">（+0%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11626,6 +11650,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">970</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>984</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11639,6 +11664,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">1,020</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>1,074</span>
+                                    <span className="text-gray-400 text-xs">（+5%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11652,6 +11678,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">670</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>670</span>
+                                    <span className="text-gray-400 text-xs">（0%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>-</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11666,6 +11693,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">2,660</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>2,728</span>
+                                    <span className="text-gray-400 text-xs">（+3%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11685,6 +11713,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">630</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>622</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11698,6 +11727,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">660</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>651</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11711,6 +11741,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">440</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>427</span>
+                                    <span className="text-gray-400 text-xs">（-3%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11725,6 +11756,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">1,730</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>1,700</span>
+                                    <span className="text-gray-400 text-xs">（-2%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11744,6 +11776,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">420</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>413</span>
+                                    <span className="text-gray-400 text-xs">（-2%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11757,6 +11790,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">450</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>453</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11770,6 +11804,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-700">290</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>287</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11784,6 +11819,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">1,160</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#9CA3AF' }}>1,153</span>
+                                    <span className="text-gray-400 text-xs">（-1%）</span>
                                     <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11801,6 +11837,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">6,180</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>6,246</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11814,6 +11851,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">6,380</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>6,644</span>
+                                    <span className="text-gray-400 text-xs">（+4%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11827,6 +11865,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">4,470</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#FF7D00' }}>4,396</span>
+                                    <span className="text-gray-400 text-xs">（-2%）</span>
                                     <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
@@ -11841,6 +11880,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     <span className="text-gray-900">17,030</span>
                                     <span className="text-gray-400">/</span>
                                     <span style={{ color: '#00B42A' }}>17,286</span>
+                                    <span className="text-gray-400 text-xs">（+1%）</span>
                                     <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
                                   </div>
                                   <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
