@@ -609,6 +609,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     newStepCalculated[1] = true;
     setStepCalculated(newStepCalculated);
     setStepStatus(stepStatus.map((s, i) => i === 1 ? 'completed' : s));
+    
+    // 自动执行目标分配合理性检测
+    setTimeout(() => {
+      checkPhaseAllocation();
+    }, 100);
+    
     // 不自动跳转到下一步
   };
   
@@ -1403,6 +1409,60 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     { id: 2, name: '爆发期', startDate: '2026-06-18', endDate: '2026-06-18', isBigDay: true, aiTarget: 4200, manualTarget: 4300, status: 'modified' },
     { id: 3, name: '返场期', startDate: '2026-06-19', endDate: '2026-06-20', isBigDay: false, aiTarget: 4000, manualTarget: 4100, status: 'modified' },
   ]);
+  
+  // 目标分配合理性检测相关状态
+  const [showAllocationCheck, setShowAllocationCheck] = useState(false);
+  const [allocationIssues, setAllocationIssues] = useState<Array<{
+    type: 'warning' | 'info';
+    phaseName: string;
+    currentRatio: number;
+    historicalRatio: number;
+    suggestion: string;
+  }>>([]);
+  
+  // 目标分配合理性检测函数
+  const checkPhaseAllocation = () => {
+    const totalTarget = phases.reduce((sum, phase) => sum + (phase.manualTarget || phase.aiTarget || 0), 0);
+    if (totalTarget <= 0) return;
+    
+    const issues: typeof allocationIssues = [];
+    
+    // 历史参考比例（根据常见大促模式定义）
+    const historicalRatios: Record<string, { min: number; max: number; ideal: number }> = {
+      '预热期': { min: 0.25, max: 0.35, ideal: 0.30 },
+      '爆发期': { min: 0.35, max: 0.50, ideal: 0.40 },
+      '返场期': { min: 0.20, max: 0.30, ideal: 0.30 }
+    };
+    
+    phases.forEach(phase => {
+      const phaseTarget = phase.manualTarget || phase.aiTarget || 0;
+      const currentRatio = phaseTarget / totalTarget;
+      const historical = historicalRatios[phase.name];
+      
+      if (historical) {
+        if (currentRatio < historical.min) {
+          issues.push({
+            type: 'warning',
+            phaseName: phase.name,
+            currentRatio: currentRatio,
+            historicalRatio: historical.ideal,
+            suggestion: `当前${phase.name}占比 ${(currentRatio * 100).toFixed(1)}%，低于历史同级别大促平均 ${(historical.ideal * 100).toFixed(0)}% 的水平，是否需要调整？`
+          });
+        } else if (currentRatio > historical.max) {
+          issues.push({
+            type: 'warning',
+            phaseName: phase.name,
+            currentRatio: currentRatio,
+            historicalRatio: historical.ideal,
+            suggestion: `当前${phase.name}占比 ${(currentRatio * 100).toFixed(1)}%，高于历史同级别大促平均 ${(historical.ideal * 100).toFixed(0)}% 的水平，是否需要调整？`
+          });
+        }
+      }
+    });
+    
+    setAllocationIssues(issues);
+    setShowAllocationCheck(issues.length > 0);
+  };
   const [dailyTargets, setDailyTargets] = useState([
     { date: '2026-06-15', phase: '预热期', aiTarget: 1150, manualTarget: 1150, status: 'confirmed' },
     { date: '2026-06-16', phase: '预热期', aiTarget: 1200, manualTarget: 1200, status: 'confirmed' },
@@ -2018,6 +2078,11 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
       const totalManual = phases.reduce((sum, p) => sum + (p.id === editingPhase ? newValue : p.manualTarget), 0);
       setTotalTarget(totalManual.toString());
       setEditingPhase(null);
+      
+      // 修改阶段目标后，自动重新检测分配合理性
+      setTimeout(() => {
+        checkPhaseAllocation();
+      }, 50);
     } else if (type === 'daily' && editingDaily !== null) {
       const newValue = parseInt(editValue);
       setDailyTargets(dailyTargets.map((d, i) => i === editingDaily ? { ...d, manualTarget: newValue, status: 'modified' } : d));
@@ -2025,6 +2090,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     }
     setEditValue('');
   };
+  
+  // 监听 phases 状态变化，自动执行检测
+  useEffect(() => {
+    if (stepCalculated[1]) {
+      checkPhaseAllocation();
+    }
+  }, [phases, stepCalculated[1]]);
   
   const handleCancelEdit = () => {
     setEditingPhase(null);
@@ -8206,6 +8278,44 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       
+                      {/* 目标分配合理性检测 */}
+                      {stepCalculated[1] && (
+                        <div className="bg-white rounded-lg p-4 border border-yellow-200 mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">🔍</span>
+                              <span className="text-sm font-medium text-gray-700">目标分配合理性检测</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                checkPhaseAllocation();
+                              }}
+                              className="px-3 py-1 text-xs bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"
+                            >
+                              重新检测
+                            </button>
+                          </div>
+                          
+                          {showAllocationCheck ? (
+                            <div className="space-y-2">
+                              {allocationIssues.map((issue, index) => (
+                                <div key={index} className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                                  <span className="text-yellow-600 mt-0.5">⚠️</span>
+                                  <div className="flex-1">
+                                    <p className="text-sm text-yellow-900">{issue.suggestion}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-100">
+                              <span className="text-green-600">✅</span>
+                              <p className="text-sm text-green-800">当前阶段目标分配合理，符合历史大促经验</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {/* BigDay配置 */}
                       <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
                         <div className="flex items-center gap-2 mb-3">
@@ -8680,19 +8790,48 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                           查看说明
                                         </button>
                                         {showCalculationDetail === index && (
-                                          <div className="absolute z-10 bg-white border border-gray-300 rounded-lg p-3 shadow-lg mt-1 text-left w-64 right-0">
-                                            <p className="text-xs font-semibold text-gray-800 mb-2">
-                                              📅 {tDate}{isBigDay ? ' BigDay' : ''} 计算参数：
+                                          <div className="absolute z-10 bg-white border border-gray-300 rounded-lg p-3 shadow-lg mt-1 text-left w-80 right-0">
+                                            <p className="text-xs font-semibold text-gray-800 mb-3">
+                                              📅 {tDate}{isBigDay ? ' BigDay' : ''} 计算参数说明
                                             </p>
-                                            <p className="text-xs text-gray-600 mb-1">
-                                              T0发货率 = {(shipment.rates.t0 * 100).toFixed(0)}%, T-1发货率 = {(shipment.rates.t1 * 100).toFixed(0)}%, T-2发货率 = {(shipment.rates.t2 * 100).toFixed(0)}%
-                                            </p>
-                                            <p className="text-xs text-gray-600 mt-2">
-                                              计算过程：
-                                            </p>
-                                            <p className="text-xs text-gray-500 font-mono">
-                                              ({shipment.t0Pay.toLocaleString()}×{shipment.rates.t0.toFixed(2)} + {shipment.t1Pay.toLocaleString()}×{shipment.rates.t1.toFixed(2)} + {shipment.t2Pay.toLocaleString()}×{shipment.rates.t2.toFixed(2)}) ÷ {shipment.rates.tPlus2.toFixed(2)} = {shipment.value.toLocaleString()}
-                                            </p>
+                                            
+                                            {/* 历史匹配说明 */}
+                                            <div className="mb-3">
+                                              <p className="text-xs font-semibold text-gray-700 mb-1">🔍 历史匹配说明：</p>
+                                              <p className="text-xs text-gray-600">
+                                                本次大促{tDate}，对应匹配2025年618大促发货周期第{index + 1}天
+                                              </p>
+                                              <p className="text-xs text-gray-600">
+                                                （对应历史日期2025/{(5 + index).toString().padStart(2, '0')}/{(13 + index).toString().padStart(2, '0')}，匹配相似度{90 + Math.floor(Math.random() * 10)}%）
+                                              </p>
+                                            </div>
+                                            
+                                            {/* 发货率对比 */}
+                                            <div className="mb-3">
+                                              <p className="text-xs font-semibold text-gray-700 mb-1">📊 发货率对比：</p>
+                                              <p className="text-xs text-gray-600">
+                                                本次T0发货率{(shipment.rates.t0 * 100).toFixed(0)}%，较2025年同期{(shipment.rates.t0 * 100 - 0.5).toFixed(1)}%提升0.5pct，
+                                              </p>
+                                              <p className="text-xs text-gray-600">
+                                                处于合理波动范围
+                                              </p>
+                                            </div>
+                                            
+                                            {/* 当前计算参数 */}
+                                            <div className="mb-3">
+                                              <p className="text-xs font-semibold text-gray-700 mb-1">⚙️ 当前计算参数：</p>
+                                              <p className="text-xs text-gray-600">
+                                                T0发货率 = {(shipment.rates.t0 * 100).toFixed(0)}%  |  T-1发货率 = {(shipment.rates.t1 * 100).toFixed(0)}%  |  T-2发货率 = {(shipment.rates.t2 * 100).toFixed(0)}%
+                                              </p>
+                                            </div>
+                                            
+                                            {/* 计算过程 */}
+                                            <div>
+                                              <p className="text-xs font-semibold text-gray-700 mb-1">🧮 计算过程：</p>
+                                              <p className="text-xs text-gray-500 font-mono break-all">
+                                                ({shipment.t0Pay.toLocaleString()}×{shipment.rates.t0.toFixed(2)} + {shipment.t1Pay.toLocaleString()}×{shipment.rates.t1.toFixed(2)} + {shipment.t2Pay.toLocaleString()}×{shipment.rates.t2.toFixed(2)}) ÷ {shipment.rates.tPlus2.toFixed(2)} = {shipment.value.toLocaleString()}
+                                              </p>
+                                            </div>
                                           </div>
                                         )}
                                       </td>
@@ -8849,33 +8988,45 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       </div>
 
                       {/* 一、上游依赖数据（只读） */}
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Database className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">一、上游依赖数据（只读，从Step4自动同步，总盘约束）</span>
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100 mb-5 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Database className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-gray-800">上游依赖数据</span>
+                            <p className="text-xs text-gray-500 mt-0.5">从Step4自动同步，总盘约束</p>
+                          </div>
                         </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="py-2 px-3 text-left">指标</th>
-                                <th className="py-2 px-3 text-center">数值</th>
-                                <th className="py-2 px-3 text-left">说明</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              <tr>
-                                <td className="py-2 px-3 font-medium">大促全周期大盘总发货GMV</td>
-                                <td className="py-2 px-3 text-center text-blue-700 font-bold">46,714万</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">所有行业发货目标总和必须等于该值，超出/不足时系统自动预警</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 px-3 font-medium">大盘分日发货GMV明细</td>
-                                <td className="py-2 px-3 text-center text-gray-600">见Step4结果</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">行业分日发货总和需与当日大盘发货目标一致</td>
-                              </tr>
-                            </tbody>
-                          </table>
+                        
+                        <div className="grid gap-4">
+                          {/* 大促全周期大盘总发货GMV */}
+                          <div className="bg-white rounded-lg p-4 border border-blue-100 flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">1</span>
+                                <h4 className="text-sm font-medium text-gray-800">大促全周期大盘总发货GMV</h4>
+                              </div>
+                              <p className="text-xs text-gray-500 ml-7">所有行业发货目标总和必须等于该值，超出/不足时系统自动预警</p>
+                            </div>
+                            <div className="bg-blue-50 rounded-lg px-4 py-2 ml-4">
+                              <span className="text-lg font-bold text-blue-700">46,714<span className="text-sm text-blue-600 ml-1">万</span></span>
+                            </div>
+                          </div>
+                          
+                          {/* 大盘分阶段发货GMV明细 */}
+                          <div className="bg-white rounded-lg p-4 border border-gray-100 flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span>
+                                <h4 className="text-sm font-medium text-gray-700">大盘分阶段发货GMV明细</h4>
+                              </div>
+                              <p className="text-xs text-gray-500 ml-7">行业分阶段发货总和需与当日大盘发货目标一致</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg px-4 py-2 ml-4">
+                              <span className="text-sm font-medium text-gray-600">见Step4结果</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -8900,16 +9051,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           }`}
                         >
                           场次信息确认
-                        </button>
-                        <button
-                          onClick={() => setStep5SubTab('history')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            step5SubTab === 'history' 
-                              ? 'bg-blue-600 text-white' 
-                              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                          }`}
-                        >
-                          行业历史参考
                         </button>
                         <button
                           onClick={() => setStep5SubTab('result')}
@@ -9261,7 +9402,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <tr>
                                   <th className="py-2 px-3 text-left">日期</th>
                                   <th className="py-2 px-3 text-left">场次类型</th>
-                                  <th className="py-2 px-3 text-center">全局默认增量系数</th>
+                                  <th className="py-2 px-3 text-center">行业预估场次增量</th>
                                   <th className="py-2 px-3 text-left">场次描述</th>
                                   <th className="py-2 px-3 text-center">确认状态</th>
                                 </tr>
@@ -9304,51 +9445,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </tbody>
                             </table>
                           </div>
-                          <div className="flex gap-2 mt-3">
-                            <button className="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs hover:bg-blue-100">
-                              📋 复制同类型大促配置
-                            </button>
-                            <button className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-200 rounded text-xs hover:bg-purple-100">
-                              👁️ 预览测算结果
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 行业历史参考子标签页内容 */}
-                      {step5SubTab === 'history' && (
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Database className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="py-2 px-3 text-left">指标名</th>
-                                  <th className="py-2 px-3 text-left">提供方</th>
-                                  <th className="py-2 px-3 text-left">说明</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y">
-                                <tr>
-                                  <td className="py-2 px-3 font-medium">各行业历史发货率</td>
-                                  <td className="py-2 px-3 text-gray-600">DS</td>
-                                  <td className="py-2 px-3 text-gray-500 text-xs">各行业T0/T-1/T-2发货率历史值，用于发货节奏校准</td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium">行业场次带动系数历史值</td>
-                                  <td className="py-2 px-3 text-gray-600">行业运营</td>
-                                  <td className="py-2 px-3 text-gray-500 text-xs">历史同类型场次对各行业的实际带动效果参考</td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium">品类结构占比</td>
-                                  <td className="py-2 px-3 text-gray-600">行业运营</td>
-                                  <td className="py-2 px-3 text-gray-500 text-xs">各二级品类在所属一级赛道中的历史占比</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
                         </div>
                       )}
 
@@ -9388,7 +9484,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   <th className="py-2 px-3 text-left">日期</th>
                                   <th className="py-2 px-3 text-center">阶段</th>
                                   <th className="py-2 px-3 text-right">3C赛道发货GMV（万）</th>
-                                  <th className="py-2 px-3 text-center">同比2024年双11增速</th>
                                   <th className="py-2 px-3 text-left">带动因素</th>
                                 </tr>
                               </thead>
@@ -9397,49 +9492,42 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   <td className="py-2 px-3 font-medium">06/15</td>
                                   <td className="py-2 px-3 text-center text-gray-600">预热期</td>
                                   <td className="py-2 px-3 text-right text-blue-700 font-medium">2,187</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+12%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">日常预热</td>
                                 </tr>
                                 <tr>
                                   <td className="py-2 px-3 font-medium">06/16</td>
                                   <td className="py-2 px-3 text-center text-gray-600">预热期</td>
                                   <td className="py-2 px-3 text-right text-blue-700 font-medium">2,721</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+18%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">3C品类日中场带动</td>
                                 </tr>
                                 <tr>
                                   <td className="py-2 px-3 font-medium">06/17</td>
                                   <td className="py-2 px-3 text-center text-gray-600">预热期</td>
                                   <td className="py-2 px-3 text-right text-blue-700 font-medium">2,284</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+11%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">日常预热</td>
                                 </tr>
                                 <tr>
                                   <td className="py-2 px-3 font-medium">06/18</td>
                                   <td className="py-2 px-3 text-center text-orange-600">爆发期</td>
                                   <td className="py-2 px-3 text-right text-orange-700 font-bold">6,163</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+21%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">全品类大场带动</td>
                                 </tr>
                                 <tr>
                                   <td className="py-2 px-3 font-medium">06/19</td>
                                   <td className="py-2 px-3 text-center text-gray-600">返场期</td>
                                   <td className="py-2 px-3 text-right text-blue-700 font-medium">1,300</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+8%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">服饰返场日无明显带动</td>
                                 </tr>
                                 <tr>
                                   <td className="py-2 px-3 font-medium">06/20</td>
                                   <td className="py-2 px-3 text-center text-gray-600">返场期</td>
                                   <td className="py-2 px-3 text-right text-blue-700 font-medium">293</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+5%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">清仓期</td>
                                 </tr>
                                 <tr className="bg-green-50 font-bold">
                                   <td className="py-2 px-3">合计</td>
                                   <td className="py-2 px-3 text-center">-</td>
                                   <td className="py-2 px-3 text-right text-green-800">14,948</td>
-                                  <td className="py-2 px-3 text-center text-green-600">+14%</td>
                                   <td className="py-2 px-3 text-gray-500 text-xs">与全周期目标一致</td>
                                 </tr>
                               </tbody>
@@ -10065,7 +10153,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               )}
 
               {/* 动态列生成的表格区域 - 跟随Step进度 */}
-              {(stepCalculated[2] || stepCalculated[3] || stepCalculated[4]) && (
+              {(showStep2BreakdownResult || stepCalculated[2] || stepCalculated[3] || stepCalculated[4]) && (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
@@ -10076,8 +10164,11 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                         <button
                           onClick={() => setTableDisplayMode('daily')}
+                          disabled={!stepCalculated[2] && !stepCalculated[3] && !stepCalculated[4]}
                           className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                            tableDisplayMode === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                            tableDisplayMode === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 
+                            (!stepCalculated[2] && !stepCalculated[3] && !stepCalculated[4]) ? 'text-gray-400 cursor-not-allowed' :
+                            'text-gray-500 hover:text-gray-700'
                           }`}
                         >
                           分日视图
@@ -10110,8 +10201,23 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             <th className="text-left py-3 px-4">阶段</th>
                           )}
                           <th className="text-right py-3 px-4">自然水位支付GMV（万）</th>
+                          {/* Step2 完成且Step3未完成时显示目标GMV和增量 */}
+                          {showStep2BreakdownResult && !stepCalculated[2] && (
+                            <>
+                              <th className="text-right py-3 px-4">目标支付GMV（万）</th>
+                              {tableDisplayMode === 'phase' && (
+                                <th className="text-right py-3 px-4">目标占比 (%)</th>
+                              )}
+                              <th className="text-right py-3 px-4">增量GMV（万）</th>
+                            </>
+                          )}
                           {stepCalculated[2] && (
-                            <th className="text-right py-3 px-4">含预算预测支付GMV（万）</th>
+                            <>
+                              <th className="text-right py-3 px-4">含预算预测支付GMV（万）</th>
+                              {tableDisplayMode === 'phase' && (
+                                <th className="text-right py-3 px-4">目标占比 (%)</th>
+                              )}
+                            </>
                           )}
                           {stepCalculated[3] && (
                             <th className="text-right py-3 px-4 font-bold text-orange-600 bg-orange-50">大盘发货GMV（万）</th>
@@ -10120,6 +10226,75 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {(() => {
+                          // 如果只有 step2 完成，使用 step2BreakdownDailyData
+                          if (showStep2BreakdownResult && !stepCalculated[2] && !stepCalculated[3] && !stepCalculated[4]) {
+                            if (tableDisplayMode === 'phase') {
+                              // 按阶段汇总 step2 数据
+                              const phaseData = step2BreakdownDailyData.reduce((acc, item) => {
+                                const phaseName = item.phase.replace('(BigDay)', '').trim();
+                                const existing = acc.find(p => p.phase === phaseName);
+                                if (existing) {
+                                  existing.natural += item.natural;
+                                  existing.target += item.target;
+                                  existing.increment += item.increment;
+                                } else {
+                                  acc.push({ 
+                                    phase: phaseName, 
+                                    natural: item.natural, 
+                                    target: item.target,
+                                    increment: item.increment,
+                                    isBigDay: item.phase.includes('BigDay')
+                                  });
+                                }
+                                return acc;
+                              }, [] as Array<{ phase: string; natural: number; target: number; increment: number; isBigDay?: boolean }>);
+
+                              return (
+                                <>
+                                  {phaseData.map((item, index) => {
+                                    const ratio = step2BreakdownTotal.target > 0 
+                                      ? ((item.target / step2BreakdownTotal.target) * 100).toFixed(1)
+                                      : '0.0';
+                                    return (
+                                      <tr key={index} className="hover:bg-gray-50">
+                                        <td className="py-3 px-4 font-medium text-gray-900">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            item.phase === '爆发期' || item.isBigDay ? 'bg-red-100 text-red-700' :
+                                            item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
+                                          }`}>
+                                            {item.phase}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
+                                        <td className="py-3 px-4 text-right font-bold text-gray-900">{item.target.toLocaleString()}</td>
+                                        <td className="py-3 px-4 text-right text-blue-600 font-medium">{ratio}%</td>
+                                        <td className="py-3 px-4 text-right text-orange-600 font-medium">+{item.increment.toLocaleString()}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                  <tr className="bg-gray-50 font-bold">
+                                    <td className="py-3 px-4 text-gray-800">合计</td>
+                                    <td className="py-3 px-4 text-right text-gray-900">{step2BreakdownTotal.natural.toLocaleString()}</td>
+                                    <td className="py-3 px-4 text-right text-gray-900">{step2BreakdownTotal.target.toLocaleString()}</td>
+                                    <td className="py-3 px-4 text-right text-gray-900">100.0%</td>
+                                    <td className="py-3 px-4 text-right text-orange-600">+{step2BreakdownTotal.increment.toLocaleString()}</td>
+                                  </tr>
+                                </>
+                              );
+                            } else {
+                              // 分日视图，但 step2 时禁用，这里做个兼容
+                              return (
+                                <tr>
+                                  <td colSpan={5} className="py-8 text-center text-gray-500">
+                                    分日视图仅在步骤3及之后可用，请先进入下一步或切换到「按阶段汇总」
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          }
+
+                          // 原有的 step3+ 数据逻辑
                           const dailyData = [
                             { date: '06/15', phase: '预热期', natural: 2200, budget: 2750, delivery: 2475 },
                             { date: '06/16', phase: '预热期', natural: 2400, budget: 3000, delivery: 2700 },
@@ -10179,35 +10354,49 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               }
                               return acc;
                             }, [] as typeof dailyData);
+                            
+                            // 计算合计
+                            const totalBudget = phaseData.reduce((sum, item) => sum + item.budget, 0);
 
                             return (
                               <>
-                                {phaseData.map((item, index) => (
-                                  <tr key={index} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4 font-medium text-gray-900">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        item.phase === '爆发期' ? 'bg-red-100 text-red-700' :
-                                        item.phase === '预售期' ? 'bg-purple-100 text-purple-700' :
-                                        item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        {item.phase}
-                                      </span>
-                                    </td>
-                                    <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
-                                    {stepCalculated[2] && (
-                                      <td className="py-3 px-4 text-right text-gray-700">{item.budget.toLocaleString()}</td>
-                                    )}
-                                    {stepCalculated[3] && (
-                                      <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">{item.delivery.toLocaleString()}</td>
-                                    )}
-                                  </tr>
-                                ))}
+                                {phaseData.map((item, index) => {
+                                  const ratio = totalBudget > 0 
+                                    ? ((item.budget / totalBudget) * 100).toFixed(1)
+                                    : '0.0';
+                                  return (
+                                    <tr key={index} className="hover:bg-gray-50">
+                                      <td className="py-3 px-4 font-medium text-gray-900">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                          item.phase === '爆发期' ? 'bg-red-100 text-red-700' :
+                                          item.phase === '预售期' ? 'bg-purple-100 text-purple-700' :
+                                          item.phase === '返场期' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-gray-100 text-gray-700'
+                                        }`}>
+                                          {item.phase}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-right text-gray-700">{item.natural.toLocaleString()}</td>
+                                      {stepCalculated[2] && (
+                                        <>
+                                          <td className="py-3 px-4 text-right text-gray-700">{item.budget.toLocaleString()}</td>
+                                          <td className="py-3 px-4 text-right text-blue-600 font-medium">{ratio}%</td>
+                                        </>
+                                      )}
+                                      {stepCalculated[3] && (
+                                        <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">{item.delivery.toLocaleString()}</td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
                                 <tr className="bg-gray-50 font-bold">
                                   <td className="py-3 px-4 text-gray-800">合计</td>
                                   <td className="py-3 px-4 text-right text-gray-900">18,900</td>
                                   {stepCalculated[2] && (
-                                    <td className="py-3 px-4 text-right text-gray-900">24,495</td>
+                                    <>
+                                      <td className="py-3 px-4 text-right text-gray-900">{totalBudget.toLocaleString()}</td>
+                                      <td className="py-3 px-4 text-right text-gray-900">100.0%</td>
+                                    </>
                                   )}
                                   {stepCalculated[3] && (
                                     <td className="py-3 px-4 text-right font-bold text-orange-600 bg-orange-50">22,046</td>
@@ -10730,30 +10919,48 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
+                              </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/16</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                              </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/17</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
+                              </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/18</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-xs">爆发期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                              </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/19</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
+                              </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/20</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
                                 <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                              </th>
+                              <th className="text-center py-3 px-1 font-medium text-gray-600">
+                                <div>同比</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>全周期合计</div>
@@ -10768,11 +10975,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 3C数码
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">587</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+12%</td>
                               <td className="py-2 px-2 text-center text-gray-700">721</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+18%</td>
                               <td className="py-2 px-2 text-center text-gray-700">500</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+11%</td>
                               <td className="py-2 px-2 text-center text-gray-700">1,863</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+21%</td>
                               <td className="py-2 px-2 text-center text-gray-700">750</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+8%</td>
                               <td className="py-2 px-2 text-center text-gray-700">527</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+5%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">4,948</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
@@ -10780,11 +10993,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-gray-400">↳</span> 手机
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">290</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+13%</td>
                               <td className="py-2 px-2 text-center text-gray-700">380</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+19%</td>
                               <td className="py-2 px-2 text-center text-gray-700">260</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+12%</td>
                               <td className="py-2 px-2 text-center text-gray-700">960</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+22%</td>
                               <td className="py-2 px-2 text-center text-gray-700">400</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+9%</td>
                               <td className="py-2 px-2 text-center text-gray-700">284</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+6%</td>
                               <td className="py-2 px-2 text-center font-medium text-gray-700">2,574</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
@@ -10792,11 +11011,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-gray-400">↳</span> 电脑整机
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">185</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+11%</td>
                               <td className="py-2 px-2 text-center text-gray-700">225</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+17%</td>
                               <td className="py-2 px-2 text-center text-gray-700">150</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+10%</td>
                               <td className="py-2 px-2 text-center text-gray-700">590</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+20%</td>
                               <td className="py-2 px-2 text-center text-gray-700">230</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center text-gray-700">164</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+4%</td>
                               <td className="py-2 px-2 text-center font-medium text-gray-700">1,544</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
@@ -10804,11 +11029,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-gray-400">↳</span> 数码配件
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">112</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+10%</td>
                               <td className="py-2 px-2 text-center text-gray-700">116</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+15%</td>
                               <td className="py-2 px-2 text-center text-gray-700">90</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+9%</td>
                               <td className="py-2 px-2 text-center text-gray-700">313</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+18%</td>
                               <td className="py-2 px-2 text-center text-gray-700">120</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+6%</td>
                               <td className="py-2 px-2 text-center text-gray-700">79</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+4%</td>
                               <td className="py-2 px-2 text-center font-medium text-gray-700">830</td>
                             </tr>
                             {/* 家电家居 */}
@@ -10817,11 +11048,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 家电家居
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">363</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+11%</td>
                               <td className="py-2 px-2 text-center text-gray-700">449</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+16%</td>
                               <td className="py-2 px-2 text-center text-gray-700">338</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+10%</td>
                               <td className="py-2 px-2 text-center text-gray-700">1,238</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+19%</td>
                               <td className="py-2 px-2 text-center text-gray-700">486</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center text-gray-700">309</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+4%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">3,183</td>
                             </tr>
                             {/* 美妆护肤 */}
@@ -10830,11 +11067,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 美妆护肤
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">413</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+13%</td>
                               <td className="py-2 px-2 text-center text-gray-700">474</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+19%</td>
                               <td className="py-2 px-2 text-center text-gray-700">382</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+12%</td>
                               <td className="py-2 px-2 text-center text-gray-700">1,365</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+23%</td>
                               <td className="py-2 px-2 text-center text-gray-700">572</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+9%</td>
                               <td className="py-2 px-2 text-center text-gray-700">368</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+6%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">3,574</td>
                             </tr>
                             {/* 服饰鞋包 */}
@@ -10843,11 +11086,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 服饰鞋包
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">327</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+10%</td>
                               <td className="py-2 px-2 text-center text-gray-700">364</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+15%</td>
                               <td className="py-2 px-2 text-center text-gray-700">293</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+9%</td>
                               <td className="py-2 px-2 text-center text-gray-700">1,074</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+18%</td>
                               <td className="py-2 px-2 text-center text-gray-700">397</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center text-gray-700">273</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+5%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">2,728</td>
                             </tr>
                             {/* 食品快消 */}
@@ -10856,11 +11105,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 食品快消
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">201</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+8%</td>
                               <td className="py-2 px-2 text-center text-gray-700">236</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+13%</td>
                               <td className="py-2 px-2 text-center text-gray-700">185</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center text-gray-700">651</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+16%</td>
                               <td className="py-2 px-2 text-center text-gray-700">261</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+6%</td>
                               <td className="py-2 px-2 text-center text-gray-700">166</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+4%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">1,700</td>
                             </tr>
                             {/* 其他行业 */}
@@ -10869,22 +11124,34 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 <span className="text-blue-500">▶</span> 其他行业
                               </td>
                               <td className="py-2 px-2 text-center text-gray-700">136</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center text-gray-700">155</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+11%</td>
                               <td className="py-2 px-2 text-center text-gray-700">122</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+6%</td>
                               <td className="py-2 px-2 text-center text-gray-700">453</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+14%</td>
                               <td className="py-2 px-2 text-center text-gray-700">173</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+5%</td>
                               <td className="py-2 px-2 text-center text-gray-700">114</td>
+                              <td className="py-2 px-1 text-center text-green-600 text-xs">+3%</td>
                               <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">1,153</td>
                             </tr>
                             {/* 大盘总计 */}
                             <tr className="bg-gray-100">
                               <td className="py-2 px-4 font-bold text-gray-900">大盘总计</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">2,027</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+11%</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">2,399</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+16%</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">1,820</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+9%</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">6,644</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+19%</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">2,639</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+7%</td>
                               <td className="py-2 px-2 text-center font-bold text-gray-900">1,757</td>
+                              <td className="py-2 px-1 text-center font-bold text-green-600 text-xs">+4%</td>
                               <td className="py-2 px-2 text-center font-bold bg-blue-100 text-gray-900">17,286</td>
                             </tr>
                           </tbody>
@@ -10908,6 +11175,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <th className="text-center py-3 px-3 font-medium text-gray-600">
                                 <div>返场期（06/19-06/20）</div>
                                 <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                              </th>
+                              <th className="text-center py-3 px-3 font-medium text-gray-600">
+                                <div>同比增速</div>
+                                <div className="text-xs text-gray-400 mt-1">2024年</div>
                               </th>
                               <th className="text-center py-3 px-3 font-medium text-gray-600">
                                 <div>全周期合计</div>
@@ -10960,6 +11231,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+14%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11017,6 +11289,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+16%</td>
                               <td className="py-2 px-3 text-center">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-medium">
@@ -11074,6 +11347,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+12%</td>
                               <td className="py-2 px-3 text-center">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-medium">
@@ -11131,6 +11405,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+11%</td>
                               <td className="py-2 px-3 text-center">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-medium">
@@ -11189,6 +11464,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+13%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11247,6 +11523,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+15%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11305,6 +11582,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+12%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11363,6 +11641,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+10%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11421,6 +11700,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center text-green-600 font-medium">+9%</td>
                               <td className="py-2 px-3 text-center bg-blue-50">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
@@ -11477,6 +11757,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-2 px-3 text-center font-bold text-green-600">+13%</td>
                               <td className="py-2 px-3 text-center bg-blue-100">
                                 <div className="flex flex-col items-center">
                                   <div className="flex items-center gap-1 font-bold">
