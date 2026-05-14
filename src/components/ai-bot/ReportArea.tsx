@@ -2077,14 +2077,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [rollbackTargetVersion, setRollbackTargetVersion] = useState('');
   const [newRollbackVersion, setNewRollbackVersion] = useState('');
   
-  // 分享功能相关状态
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareLink, setShareLink] = useState('');
-  const [shareExpiry, setShareExpiry] = useState('7');
-  const [shareType, setShareType] = useState<'view' | 'edit'>('view');
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  
   // 导出功能相关状态
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'ppt'>('pdf');
@@ -2114,28 +2106,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     setTimeout(() => {
       setExportSuccess(false);
     }, 5000);
-  };
-  
-  // 生成分享链接
-  const generateShareLink = async () => {
-    setIsGeneratingLink(true);
-    
-    // 模拟生成分享链接（实际调用后端API）
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 模拟分享链接
-    const link = `https://peng-khaki.vercel.app/share/${Date.now().toString(36).toUpperCase()}`;
-    setShareLink(link);
-    setIsGeneratingLink(false);
-  };
-  
-  // 复制链接到剪贴板
-  const copyShareLink = async () => {
-    if (shareLink) {
-      await navigator.clipboard.writeText(shareLink);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
   };
   
   // 版本回退函数
@@ -11588,109 +11558,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         </div>
       </div>
       
-      
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowShareModal(false)}></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Upload className="w-5 h-5 text-gray-700" />
-                <h3 className="text-lg font-semibold text-gray-900">分享设置</h3>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">有效期</label>
-                  <select 
-                    value={shareExpiry}
-                    onChange={(e) => setShareExpiry(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="1">1天</option>
-                    <option value="3">3天</option>
-                    <option value="7">7天</option>
-                    <option value="30">30天</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">访问权限</label>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="shareType" 
-                        checked={shareType === 'view'}
-                        onChange={() => setShareType('view')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">仅查看（无法进行调参模拟）</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="shareType" 
-                        checked={shareType === 'edit'}
-                        onChange={() => setShareType('edit')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">允许交互（可使用AI对话和模拟功能）</span>
-                    </label>
-                  </div>
-                </div>
-                
-                {shareLink && (
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 truncate flex-1 mr-3">{shareLink}</span>
-                      <button
-                        onClick={copyShareLink}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                      >
-                        {isCopied ? (
-                          <>
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            已复制
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            复制
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex gap-3 mt-8">
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-                >
-                  返回
-                </button>
-                <button
-                  onClick={generateShareLink}
-                  disabled={isGeneratingLink}
-                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isGeneratingLink ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      生成中...
-                    </>
-                  ) : (
-                    '生成链接'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* 导出分析报告模态框 */}
       {showExportModal && (
