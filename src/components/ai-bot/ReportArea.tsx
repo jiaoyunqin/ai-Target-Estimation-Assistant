@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database, Workflow } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie } from 'recharts';
+import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database, Workflow, Shield, Users, Check } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, Area, AreaChart } from 'recharts';
 
 interface ReportAreaProps {
   onClose: () => void;
@@ -310,6 +310,18 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [growthRate, setGrowthRate] = useState(15); // 当前增速值
   const [tempGrowthRate, setTempGrowthRate] = useState(15); // 编辑时的临时值
   const [naturalWaterLevelTotal, setNaturalWaterLevelTotal] = useState(11800); // 自然水位GMV合计
+  
+  // Step2目标拆分结果相关状态
+  const [showStep2BreakdownResult, setShowStep2BreakdownResult] = useState(false); // 是否显示Step2目标拆分结果
+  const [step2BreakdownDailyData, setStep2BreakdownDailyData] = useState([
+    { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%' },
+    { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%' },
+    { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%' },
+    { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true },
+    { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%' },
+    { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%' }
+  ]);
+  const [step2BreakdownTotal, setStep2BreakdownTotal] = useState({ natural: 11800, increment: 3670, target: 15470, ratio: '31%' });
   const [industryData, setIndustryData] = useState([
     { id: 1, level: '一级', name: '3C数码', expanded: true, total: 14948, preheat: 3289, outbreak: 8221, return: 3438, subIndustries: [
       { id: 11, name: '手机', target: 7474, preheat: 1579, outbreak: 4111, return: 1784 },
@@ -336,6 +348,98 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   ]);
   
   const [step5SubTab, setStep5SubTab] = useState<'industry' | 'session' | 'history' | 'result'>('industry');
+  const [sessionViewMode, setSessionViewMode] = useState<'list' | 'heatmap'>('list');
+  const [editingCoeff, setEditingCoeff] = useState<{date: string, industry: string} | null>(null);
+  const [sessionVersionHistory, setSessionVersionHistory] = useState<any[]>([]);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  
+  // 更详细的场次数据，支持分行业系数
+  const [detailedSessionData, setDetailedSessionData] = useState([
+    { 
+      date: '06/15', 
+      type: '小场', 
+      globalCoeff: 1.0, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.0},
+        {industry: '美妆护肤', coeff: 1.0},
+        {industry: '家电家居', coeff: 1.0},
+        {industry: '服饰鞋包', coeff: 1.0},
+        {industry: '其他', coeff: 1.0}
+      ],
+      desc: '日常预热', 
+      status: 'confirmed' 
+    },
+    { 
+      date: '06/16', 
+      type: '中场（3C品类日）', 
+      globalCoeff: 1.0, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.3},
+        {industry: '美妆护肤', coeff: 1.0},
+        {industry: '家电家居', coeff: 1.0},
+        {industry: '服饰鞋包', coeff: 1.0},
+        {industry: '其他', coeff: 1.0}
+      ],
+      desc: '3C品类专属补贴日', 
+      status: 'confirmed' 
+    },
+    { 
+      date: '06/17', 
+      type: '中场（美妆品类日）', 
+      globalCoeff: 1.0, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.0},
+        {industry: '美妆护肤', coeff: 1.2},
+        {industry: '家电家居', coeff: 1.0},
+        {industry: '服饰鞋包', coeff: 1.0},
+        {industry: '其他', coeff: 1.0}
+      ],
+      desc: '美妆超级品类日', 
+      status: 'confirmed' 
+    },
+    { 
+      date: '06/18', 
+      type: '大场（全品类爆发）', 
+      globalCoeff: 1.3, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.3},
+        {industry: '美妆护肤', coeff: 1.3},
+        {industry: '家电家居', coeff: 1.3},
+        {industry: '服饰鞋包', coeff: 1.3},
+        {industry: '其他', coeff: 1.3}
+      ],
+      desc: '618主会场流量峰值、超级明星直播间', 
+      status: 'confirmed' 
+    },
+    { 
+      date: '06/19', 
+      type: '中场（服饰返场日）', 
+      globalCoeff: 1.0, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.0},
+        {industry: '美妆护肤', coeff: 1.0},
+        {industry: '家电家居', coeff: 1.0},
+        {industry: '服饰鞋包', coeff: 1.15},
+        {industry: '其他', coeff: 1.0}
+      ],
+      desc: '服饰专属返场补贴', 
+      status: 'confirmed' 
+    },
+    { 
+      date: '06/20', 
+      type: '小场', 
+      globalCoeff: 1.0, 
+      industryCoeffs: [
+        {industry: '3C数码', coeff: 1.0},
+        {industry: '美妆护肤', coeff: 1.0},
+        {industry: '家电家居', coeff: 1.0},
+        {industry: '服饰鞋包', coeff: 1.0},
+        {industry: '其他', coeff: 1.0}
+      ],
+      desc: '全品类清仓返场', 
+      status: 'confirmed' 
+    }
+  ]);
   
   const steps = [
     { num: 1, title: '自然水位分日预测', description: '基于历史参考数据预测自然水位' },
@@ -415,6 +519,33 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     setFullCycleTargets(phaseTargets);
     setTargetGmv(totalTarget);
     setShowBudgetChart(false);
+    
+    // 计算增量目标和增量百分比
+    const incrementTarget = totalTarget - baseValue;
+    const incrementPercentage = Math.round((incrementTarget / baseValue) * 100);
+    
+    // 更新Step2目标拆分结果数据
+    setStep2BreakdownTotal({
+      natural: baseValue,
+      increment: incrementTarget,
+      target: totalTarget,
+      ratio: `${incrementPercentage}%`
+    });
+    
+    // 生成分日明细数据
+    const mockDailyData = [
+      { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%' },
+      { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%' },
+      { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%' },
+      { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true },
+      { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%' },
+      { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%' }
+    ];
+    setStep2BreakdownDailyData(mockDailyData);
+    
+    // 显示Step2目标拆分结果
+    setShowStep2BreakdownResult(true);
+    
     // 标记Step2已测算
     const newStepCalculated = [...stepCalculated];
     newStepCalculated[1] = true;
@@ -489,6 +620,47 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [resultTableTab, setResultTableTab] = useState<'industry' | 'phase' | 'subIndustry' | 'daily' | 'delivery' | 'session'>('industry');
   const [selectedIndustryForDonut, setSelectedIndustryForDonut] = useState('3C数码');
   const [selectedDashboardIndustry, setSelectedDashboardIndustry] = useState('total'); // 'total' | '3c' | 'home' | 'beauty'
+  const [showIndustryDeliveryCharts, setShowIndustryDeliveryCharts] = useState(false); // 控制行业发货GMV图表显示
+  const [isStackedView, setIsStackedView] = useState(false); // 是否显示堆叠面积图模式
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null); // 鼠标hover的日期
+  const [showAiDetail, setShowAiDetail] = useState(false); // AI解释弹窗
+  const [showShareModal, setShowShareModal] = useState(false); // 分享弹窗
+  const [shareSearchQuery, setShareSearchQuery] = useState(''); // 分享搜索框
+  const [sharePermissions, setSharePermissions] = useState([
+    {
+      id: 'capital',
+      role: '资管组',
+      scope: '全局可见',
+      scopeType: 'global',
+      permission: 'edit',
+      members: ['张资管', '李资管', '王资管']
+    },
+    {
+      id: '3c',
+      role: '3C数码行业组',
+      scope: '仅限 3C数码',
+      scopeType: 'industry',
+      permission: 'limited',
+      members: ['王3C', '赵数码']
+    },
+    {
+      id: 'home',
+      role: '家电家居行业组',
+      scope: '仅限 家电家居',
+      scopeType: 'industry',
+      permission: 'view',
+      members: ['刘家电', '孙家居']
+    },
+    {
+      id: 'beauty',
+      role: '美妆个护行业组',
+      scope: '仅限 美妆个护',
+      scopeType: 'industry',
+      permission: 'limited',
+      members: ['陈美妆', '周护肤']
+    }
+  ]);
+  const [sendFeishuNotification, setSendFeishuNotification] = useState(true); // 发送飞书通知
   
   // 联动状态存储
   interface SelectedPoint {
@@ -628,10 +800,24 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         { name: '其他', value: 710, ratio: '6.7%', color: '#6B7280' }
       ]
     },
-    // 3C数码视角：看二级行业
+    // 3C数码视角：看二级行业（包含大盘参照系）
     '3c': {
       xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
       series: [
+        {
+          name: '大盘总计',
+          isMain: false,
+          isReference: true,
+          color: '#9CA3AF',
+          trendData: [
+            { date: '06/15', value: 1500 }, 
+            { date: '06/16', value: 1570 },
+            { date: '06/17', value: 1630 },
+            { date: '06/18', value: 5500 },
+            { date: '06/19', value: 2845 },
+            { date: '06/20', value: 1980 }
+          ]
+        },
         {
           name: '3C数码总计',
           isMain: true,
@@ -690,12 +876,34 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         { name: '手机', value: 1800, ratio: '62.5%', color: '#3B82F6' },
         { name: '电脑整机', value: 800, ratio: '27.8%', color: '#6366F1' },
         { name: '数码配件', value: 280, ratio: '9.7%', color: '#8B5CF6' }
-      ]
+      ],
+      dailyBreakdown: {
+        '06/15': [{ name: '手机', value: 260, ratio: '63.4%', color: '#3B82F6' }, { name: '电脑整机', value: 110, ratio: '26.8%', color: '#6366F1' }, { name: '数码配件', value: 40, ratio: '9.8%', color: '#8B5CF6' }],
+        '06/16': [{ name: '手机', value: 275, ratio: '64.0%', color: '#3B82F6' }, { name: '电脑整机', value: 120, ratio: '27.9%', color: '#6366F1' }, { name: '数码配件', value: 35, ratio: '8.1%', color: '#8B5CF6' }],
+        '06/17': [{ name: '手机', value: 290, ratio: '64.4%', color: '#3B82F6' }, { name: '电脑整机', value: 125, ratio: '27.8%', color: '#6366F1' }, { name: '数码配件', value: 35, ratio: '7.8%', color: '#8B5CF6' }],
+        '06/18': [{ name: '手机', value: 900, ratio: '62.5%', color: '#3B82F6' }, { name: '电脑整机', value: 400, ratio: '27.8%', color: '#6366F1' }, { name: '数码配件', value: 140, ratio: '9.7%', color: '#8B5CF6' }],
+        '06/19': [{ name: '手机', value: 470, ratio: '62.7%', color: '#3B82F6' }, { name: '电脑整机', value: 210, ratio: '28.0%', color: '#6366F1' }, { name: '数码配件', value: 70, ratio: '9.3%', color: '#8B5CF6' }],
+        '06/20': [{ name: '手机', value: 325, ratio: '62.5%', color: '#3B82F6' }, { name: '电脑整机', value: 145, ratio: '27.9%', color: '#6366F1' }, { name: '数码配件', value: 50, ratio: '9.6%', color: '#8B5CF6' }]
+      }
     },
-    // 家电视角：看二级行业
+    // 家电视角：看二级行业（包含大盘参照系）
     'home': {
       xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
       series: [
+        {
+          name: '大盘总计',
+          isMain: false,
+          isReference: true,
+          color: '#9CA3AF',
+          trendData: [
+            { date: '06/15', value: 1500 }, 
+            { date: '06/16', value: 1570 },
+            { date: '06/17', value: 1630 },
+            { date: '06/18', value: 5500 },
+            { date: '06/19', value: 2845 },
+            { date: '06/20', value: 1980 }
+          ]
+        },
         {
           name: '家电总计',
           isMain: true,
@@ -754,12 +962,34 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         { name: '大家电', value: 1140, ratio: '50.0%', color: '#10B981' },
         { name: '小家电', value: 684, ratio: '30.0%', color: '#34D399' },
         { name: '厨房电器', value: 456, ratio: '20.0%', color: '#6EE7B7' }
-      ]
+      ],
+      dailyBreakdown: {
+        '06/15': [{ name: '大家电', value: 160, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 95, ratio: '29.7%', color: '#34D399' }, { name: '厨房电器', value: 65, ratio: '20.3%', color: '#6EE7B7' }],
+        '06/16': [{ name: '大家电', value: 170, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 100, ratio: '29.4%', color: '#34D399' }, { name: '厨房电器', value: 70, ratio: '20.6%', color: '#6EE7B7' }],
+        '06/17': [{ name: '大家电', value: 180, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 108, ratio: '30.0%', color: '#34D399' }, { name: '厨房电器', value: 72, ratio: '20.0%', color: '#6EE7B7' }],
+        '06/18': [{ name: '大家电', value: 550, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 330, ratio: '30.0%', color: '#34D399' }, { name: '厨房电器', value: 220, ratio: '20.0%', color: '#6EE7B7' }],
+        '06/19': [{ name: '大家电', value: 290, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 175, ratio: '30.2%', color: '#34D399' }, { name: '厨房电器', value: 115, ratio: '19.8%', color: '#6EE7B7' }],
+        '06/20': [{ name: '大家电', value: 200, ratio: '50.0%', color: '#10B981' }, { name: '小家电', value: 120, ratio: '30.0%', color: '#34D399' }, { name: '厨房电器', value: 80, ratio: '20.0%', color: '#6EE7B7' }]
+      }
     },
-    // 美妆个护视角：看二级行业
+    // 美妆个护视角：看二级行业（包含大盘参照系）
     'beauty': {
       xAxis: ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'],
       series: [
+        {
+          name: '大盘总计',
+          isMain: false,
+          isReference: true,
+          color: '#9CA3AF',
+          trendData: [
+            { date: '06/15', value: 1500 }, 
+            { date: '06/16', value: 1570 },
+            { date: '06/17', value: 1630 },
+            { date: '06/18', value: 5500 },
+            { date: '06/19', value: 2845 },
+            { date: '06/20', value: 1980 }
+          ]
+        },
         {
           name: '美妆个护总计',
           isMain: true,
@@ -804,7 +1034,15 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
       breakdown: [
         { name: '护肤品', value: 800, ratio: '66.7%', color: '#8B5CF6' },
         { name: '彩妆', value: 400, ratio: '33.3%', color: '#A78BFA' }
-      ]
+      ],
+      dailyBreakdown: {
+        '06/15': [{ name: '护肤品', value: 115, ratio: '67.6%', color: '#8B5CF6' }, { name: '彩妆', value: 55, ratio: '32.4%', color: '#A78BFA' }],
+        '06/16': [{ name: '护肤品', value: 120, ratio: '66.7%', color: '#8B5CF6' }, { name: '彩妆', value: 60, ratio: '33.3%', color: '#A78BFA' }],
+        '06/17': [{ name: '护肤品', value: 130, ratio: '68.4%', color: '#8B5CF6' }, { name: '彩妆', value: 60, ratio: '31.6%', color: '#A78BFA' }],
+        '06/18': [{ name: '护肤品', value: 430, ratio: '67.2%', color: '#8B5CF6' }, { name: '彩妆', value: 210, ratio: '32.8%', color: '#A78BFA' }],
+        '06/19': [{ name: '护肤品', value: 230, ratio: '66.7%', color: '#8B5CF6' }, { name: '彩妆', value: 115, ratio: '33.3%', color: '#A78BFA' }],
+        '06/20': [{ name: '护肤品', value: 155, ratio: '67.4%', color: '#8B5CF6' }, { name: '彩妆', value: 75, ratio: '32.6%', color: '#A78BFA' }]
+      }
     }
   };
   
@@ -818,10 +1056,37 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
       
       if (dashboardMockData[pointIndustryKey]) {
         const data = dashboardMockData[pointIndustryKey];
+        // 优先使用每日细分数据
+        if (data.dailyBreakdown && data.dailyBreakdown[point.date]) {
+          const dailyData = data.dailyBreakdown[point.date];
+          return {
+            title: `${point.date} - ${point.industryKey} 发货结构`,
+            totalGmv: dailyData.reduce((sum, d) => sum + d.value, 0),
+            children: dailyData
+          };
+        }
         return {
           title: `${point.date} - ${point.industryKey} 发货结构`,
           totalGmv: Math.round(data.totalGmv * 0.35), // 模拟单日数据
           children: data.breakdown
+        };
+      }
+    }
+    
+    // 如果有hover的日期，显示当天的细分数据
+    if (hoveredDate) {
+      const currentData = dashboardMockData[selectedDashboardIndustry] || dashboardMockData['total'];
+      if (currentData.dailyBreakdown && currentData.dailyBreakdown[hoveredDate]) {
+        const dailyData = currentData.dailyBreakdown[hoveredDate];
+        let industryName = '各行业';
+        if (selectedDashboardIndustry === '3c') industryName = '3C数码';
+        else if (selectedDashboardIndustry === 'home') industryName = '家电';
+        else if (selectedDashboardIndustry === 'beauty') industryName = '美妆个护';
+        
+        return {
+          title: `${hoveredDate} - ${industryName} 发货结构`,
+          totalGmv: dailyData.reduce((sum, d) => sum + d.value, 0),
+          children: dailyData
         };
       }
     }
@@ -868,9 +1133,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   const handleConfirmStep4 = () => {
     // 模拟AI生成发货GMV分日预测 - 立即完成，便于测试
-    const deliveryData = dailyGmvTargets.map(d => ({
+    const payGMVData = dailyGmvTargets.map(t => ({ payGMV: t.manualTarget }));
+    const deliveryData = dailyGmvTargets.map((d, i) => ({
       date: d.date,
-      value: Math.round(d.manualTarget * 0.92),
+      value: calculateDailyShipmentGMV(i, payGMVData).value,
     }));
     setDeliveryGmvData(deliveryData);
     // 标记Step4已测算
@@ -1102,6 +1368,21 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [step2TotalGMV, setStep2TotalGMV] = useState<string>('15340');
   const syncingFrom = useRef<'step2' | 'target' | null>(null);
   
+  // Step4 发货预测相关状态
+  const [showStep4Formula, setShowStep4Formula] = useState(false);
+  const [showCalculationDetail, setShowCalculationDetail] = useState<number | null>(null);
+  const [expandedReference, setExpandedReference] = useState(false);
+  
+  // 动态发货率数据（每日不同）
+  const [dailyShipmentRates, setDailyShipmentRates] = useState([
+    { date: '06/15', t0: 0.25, t1: 0.45, t2: 0.20, tPlus2: 0.90 },
+    { date: '06/16', t0: 0.28, t1: 0.48, t2: 0.18, tPlus2: 0.94 },
+    { date: '06/17', t0: 0.30, t1: 0.50, t2: 0.15, tPlus2: 0.95 },
+    { date: '06/18', t0: 0.15, t1: 0.60, t2: 0.20, tPlus2: 0.95 }, // BigDay特殊处理
+    { date: '06/19', t0: 0.35, t1: 0.40, t2: 0.15, tPlus2: 0.90 },
+    { date: '06/20', t0: 0.38, t1: 0.38, t2: 0.14, tPlus2: 0.90 }
+  ]);
+  
   // Step2 滑块式分阶段目标分配相关状态
   const [phaseConfigs, setPhaseConfigs] = useState<Array<{
     id: number | string;
@@ -1121,6 +1402,294 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   // 阶段配色
   const phaseColors = ['#6B7280', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6'];
   
+  // Step2 极简重构：阶段占比和金额分配状态
+  const [phaseAllocation, setPhaseAllocation] = useState<Array<{
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    percentage: number;
+    amount: number;
+  }>>([
+    { id: 1, name: '预热期', startDate: '2026-06-15', endDate: '2026-06-17', percentage: 30, amount: 4641 },
+    { id: 2, name: '爆发期', startDate: '2026-06-18', endDate: '2026-06-18', percentage: 35, amount: 5415 },
+    { id: 3, name: '返场期', startDate: '2026-06-19', endDate: '2026-06-20', percentage: 35, amount: 5414 }
+  ]);
+  
+  // Step1 重构：历史参考大促相关数据
+  const step1MockData = {
+    predictData: [
+      { date: '06/15', value: 2200 },
+      { date: '06/16', value: 2400 },
+      { date: '06/17', value: 2600 },
+      { date: '06/18', value: 5800 },
+      { date: '06/19', value: 3100 },
+      { date: '06/20', value: 2800 }
+    ],
+    historicalReferences: [
+      {
+        id: 1,
+        name: '2025年 618大促',
+        similarity: 92,
+        weight: 60,
+        restoredFactors: ['剔除平台消费券补贴 500万', '剔除品类定向满减 200万'],
+        chartData: [
+          { date: '06/15', originalDate: '2025/06/16', value: 1900 },
+          { date: '06/16', originalDate: '2025/06/17', value: 2100 },
+          { date: '06/17', originalDate: '2025/06/18', value: 2300 },
+          { date: '06/18', originalDate: '2025/06/19', value: 5100 },
+          { date: '06/19', originalDate: '2025/06/20', value: 2800 },
+          { date: '06/20', originalDate: '2025/06/21', value: 2500 }
+        ],
+        enabled: true
+      },
+      {
+        id: 2,
+        name: '2024年 618大促',
+        similarity: 85,
+        weight: 30,
+        restoredFactors: ['剔除直播间流量激励 300万', '剔除跨店满减 150万'],
+        chartData: [
+          { date: '06/15', originalDate: '2024/06/17', value: 1750 },
+          { date: '06/16', originalDate: '2024/06/18', value: 1950 },
+          { date: '06/17', originalDate: '2024/06/19', value: 2150 },
+          { date: '06/18', originalDate: '2024/06/20', value: 4800 },
+          { date: '06/19', originalDate: '2024/06/21', value: 2600 },
+          { date: '06/20', originalDate: '2024/06/22', value: 2350 }
+        ],
+        enabled: true
+      },
+      {
+        id: 3,
+        name: '2023年 618大促',
+        similarity: 78,
+        weight: 10,
+        restoredFactors: ['剔除拉新红包 100万'],
+        chartData: [
+          { date: '06/15', originalDate: '2023/06/18', value: 1500 },
+          { date: '06/16', originalDate: '2023/06/19', value: 1600 },
+          { date: '06/17', originalDate: '2023/06/20', value: 1800 },
+          { date: '06/18', originalDate: '2023/06/21', value: 4200 },
+          { date: '06/19', originalDate: '2023/06/22', value: 2300 },
+          { date: '06/20', originalDate: '2023/06/23', value: 2100 }
+        ],
+        enabled: true
+      }
+    ],
+    allHistoricalPromotions: [
+      { id: 1, name: '2025年 618大促' },
+      { id: 2, name: '2024年 618大促' },
+      { id: 3, name: '2023年 618大促' },
+      { id: 4, name: '2025年 双11大促' },
+      { id: 5, name: '2024年 双11大促' },
+      { id: 6, name: '2023年 双11大促' }
+    ]
+  };
+  
+  // Step1 重构相关状态
+  const [showReferenceDrawer, setShowReferenceDrawer] = useState(false);
+  const [step1HistoricalReferences, setStep1HistoricalReferences] = useState(step1MockData.historicalReferences);
+  const [showHistoricalLines, setShowHistoricalLines] = useState(true);
+  const [expandedReferenceId, setExpandedReferenceId] = useState<number | null>(null);
+  const [nextReferenceId, setNextReferenceId] = useState(7);
+  
+  // 验证权重总和
+  const totalWeight = step1HistoricalReferences.reduce((sum, ref) => ref.enabled ? sum + ref.weight : sum, 0);
+  const isWeightValid = totalWeight === 100;
+  
+  // 更新权重（自动分配其他项的权重以保持总和100%）
+  const updateWeight = (id: number, newWeight: number) => {
+    const enabledRefs = step1HistoricalReferences.filter(ref => ref.enabled);
+    const currentRef = enabledRefs.find(ref => ref.id === id);
+    if (!currentRef) return;
+    
+    const weightDiff = newWeight - currentRef.weight;
+    const otherRefs = enabledRefs.filter(ref => ref.id !== id);
+    
+    if (otherRefs.length === 0) {
+      // 只有一个项，直接设置
+      setStep1HistoricalReferences(
+        step1HistoricalReferences.map(ref => 
+          ref.id === id ? { ...ref, weight: newWeight } : ref
+        )
+      );
+      return;
+    }
+    
+    // 计算其他项需要调整的总量
+    const totalOtherWeight = otherRefs.reduce((sum, ref) => sum + ref.weight, 0);
+    const newTotalOtherWeight = totalOtherWeight - weightDiff;
+    
+    // 按比例分配到其他项
+    setStep1HistoricalReferences(
+      step1HistoricalReferences.map(ref => {
+        if (ref.id === id) {
+          return { ...ref, weight: newWeight };
+        } else if (ref.enabled) {
+          const ratio = ref.weight / totalOtherWeight;
+          const adjustedWeight = Math.round(newTotalOtherWeight * ratio);
+          return { ...ref, weight: adjustedWeight };
+        }
+        return ref;
+      })
+    );
+  };
+  
+  // 删除参考大促（自动分配权重到其他项）
+  const deleteReference = (id: number) => {
+    const referenceToDelete = step1HistoricalReferences.find(ref => ref.id === id);
+    if (!referenceToDelete) return;
+    
+    const enabledRefs = step1HistoricalReferences.filter(ref => ref.enabled && ref.id !== id);
+    if (enabledRefs.length === 0) {
+      // 删除后没有启用项，直接删除
+      setStep1HistoricalReferences(step1HistoricalReferences.filter(ref => ref.id !== id));
+      return;
+    }
+    
+    const weightToDistribute = referenceToDelete.weight;
+    const totalOtherWeight = enabledRefs.reduce((sum, ref) => sum + ref.weight, 0);
+    
+    setStep1HistoricalReferences(
+      step1HistoricalReferences
+        .filter(ref => ref.id !== id)
+        .map(ref => {
+          if (ref.enabled) {
+            const ratio = ref.weight / totalOtherWeight;
+            const additionalWeight = Math.round(weightToDistribute * ratio);
+            return { ...ref, weight: ref.weight + additionalWeight };
+          }
+          return ref;
+        })
+    );
+  };
+  
+  // 添加参考大促
+  const addReference = (promotionId: number) => {
+    const promotion = step1MockData.allHistoricalPromotions.find(p => p.id === promotionId);
+    if (!promotion) return;
+    
+    // 检查是否已存在
+    if (step1HistoricalReferences.find(ref => ref.id === promotionId)) return;
+    
+    const enabledRefs = step1HistoricalReferences.filter(ref => ref.enabled);
+    const newWeight = enabledRefs.length > 0 ? Math.floor(100 / (enabledRefs.length + 1)) : 100;
+    
+    // 计算其他项需要减少的权重
+    const totalToSubtract = enabledRefs.length > 0 ? newWeight : 0;
+    const totalWeight = enabledRefs.reduce((sum, ref) => sum + ref.weight, 0);
+    
+    const newReference = {
+      id: promotionId,
+      name: promotion.name,
+      similarity: Math.floor(Math.random() * 20) + 70, // 随机相似度70-90
+      weight: newWeight,
+      restoredFactors: ['剔除补贴若干'],
+      chartData: step1MockData.predictData.map(d => ({
+        date: d.date,
+        originalDate: `202X/${d.date}`,
+        value: d.value - Math.floor(Math.random() * 500) - 200
+      })),
+      enabled: true
+    };
+    
+    setStep1HistoricalReferences([
+      ...step1HistoricalReferences.map(ref => {
+        if (ref.enabled && enabledRefs.length > 0) {
+          const ratio = ref.weight / totalWeight;
+          const subtract = Math.round(totalToSubtract * ratio);
+          return { ...ref, weight: ref.weight - subtract };
+        }
+        return ref;
+      }),
+      newReference
+    ]);
+    
+    setNextReferenceId(nextReferenceId + 1);
+  };
+  
+  // 切换参考大促启用状态（禁用时自动分配权重）
+  const toggleReferenceEnabled = (id: number) => {
+    const reference = step1HistoricalReferences.find(ref => ref.id === id);
+    if (!reference) return;
+    
+    if (reference.enabled) {
+      // 禁用：分配权重到其他启用项
+      const enabledRefs = step1HistoricalReferences.filter(ref => ref.enabled && ref.id !== id);
+      if (enabledRefs.length > 0) {
+        const weightToDistribute = reference.weight;
+        const totalOtherWeight = enabledRefs.reduce((sum, ref) => sum + ref.weight, 0);
+        
+        setStep1HistoricalReferences(
+          step1HistoricalReferences.map(ref => {
+            if (ref.id === id) {
+              return { ...ref, enabled: false };
+            } else if (ref.enabled) {
+              const ratio = ref.weight / totalOtherWeight;
+              const additionalWeight = Math.round(weightToDistribute * ratio);
+              return { ...ref, weight: ref.weight + additionalWeight };
+            }
+            return ref;
+          })
+        );
+      } else {
+        setStep1HistoricalReferences(
+          step1HistoricalReferences.map(ref => 
+            ref.id === id ? { ...ref, enabled: false } : ref
+          )
+        );
+      }
+    } else {
+      // 启用：从其他启用项分配权重
+      const enabledRefs = step1HistoricalReferences.filter(ref => ref.enabled);
+      const newWeight = enabledRefs.length > 0 ? Math.floor(100 / (enabledRefs.length + 1)) : 100;
+      const totalToSubtract = enabledRefs.length > 0 ? newWeight : 0;
+      const totalEnabledWeight = enabledRefs.reduce((sum, ref) => sum + ref.weight, 0);
+      
+      setStep1HistoricalReferences(
+        step1HistoricalReferences.map(ref => {
+          if (ref.id === id) {
+            return { ...ref, enabled: true, weight: newWeight };
+          } else if (ref.enabled && enabledRefs.length > 0) {
+            const ratio = ref.weight / totalEnabledWeight;
+            const subtract = Math.round(totalToSubtract * ratio);
+            return { ...ref, weight: ref.weight - subtract };
+          }
+          return ref;
+        })
+      );
+    }
+  };
+  
+  // 展开/收起折叠面板
+  const toggleExpand = (id: number) => {
+    setExpandedReferenceId(expandedReferenceId === id ? null : id);
+  };
+
+  // 计算单日发货GMV
+  const calculateDailyShipmentGMV = (dayIndex: number, payGMVData: any[]) => {
+    // 找到对应日期的动态发货率
+    const dateStr = ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'][dayIndex];
+    const rate = dailyShipmentRates.find(r => r.date === dateStr) || dailyShipmentRates[0];
+    
+    // 获取T日、T-1日、T-2日的支付GMV
+    const t0Pay = payGMVData[dayIndex]?.payGMV || 0;
+    const t1Pay = dayIndex > 0 ? (payGMVData[dayIndex - 1]?.payGMV || 0) : 1500; // T-1
+    const t2Pay = dayIndex > 1 ? (payGMVData[dayIndex - 2]?.payGMV || 0) : 1450; // T-2
+    
+    // 计算
+    const numerator = (t0Pay * rate.t0) + (t1Pay * rate.t1) + (t2Pay * rate.t2);
+    const result = Math.round(numerator / rate.tPlus2);
+    
+    return {
+      value: result,
+      t0Pay,
+      t1Pay,
+      t2Pay,
+      rates: rate
+    };
+  };
+
   // 初始化 phaseConfigs
   useEffect(() => {
     if (phases.length > 0) {
@@ -1414,7 +1983,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   // 版本控制相关状态
   const [currentVersion, setCurrentVersion] = useState('V2.2');
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isViewingHistory, setIsViewingHistory] = useState(false);
   const [viewingHistoryVersion, setViewingHistoryVersion] = useState('');
   const [versionHistory, setVersionHistory] = useState([
@@ -1668,6 +2236,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 当进入Step5且Step5已测算过时，自动显示行业发货GMV图表
+  useEffect(() => {
+    if (calculationStep === 4 && stepCalculated[4]) {
+      setShowIndustryDeliveryCharts(true);
+    }
+  }, [calculationStep, stepCalculated[4]]);
   
   // 各行业分日发货GMV模拟数据
   const industryDailyData = {
@@ -6262,79 +6837,57 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             <Lightbulb className="w-4 h-4 text-blue-600" />
                             <span className="text-sm font-medium text-gray-700">数据来源说明</span>
                           </div>
-                          <button
-                            onClick={() => setTargetTab('reference')}
-                            className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
-                          >
-                            去「测算参考」页确认/调整
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setShowReferenceDrawer(true)}
+                              className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
+                            >
+                              <Settings className="w-3 h-3" />
+                              调整参考大促及权重
+                            </button>
+                            <button
+                              onClick={() => console.log('跳转到测算参考页签')}
+                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              查看详细还原数据
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                         <div className="text-xs text-gray-600 mb-3">
-                          AI将参考以下历史数据进行自然水位预测：
+                          参考历史大促：综合近 3 场同类大促
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="text-xs text-gray-500">历史大促数据</div>
-                            <div className="text-sm font-medium text-gray-900">2025年618数据</div>
+                            <div className="text-xs text-gray-500 mb-1">参考历史大促</div>
+                            <div className="space-y-1">
+                              {step1HistoricalReferences.filter(r => r.enabled).map(reference => (
+                                <div key={reference.id} className="text-xs text-gray-800">
+                                  • {reference.name}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="text-xs text-gray-500">预测大盘同比增速 (AI预估)</div>
-                            <div 
-                              className={`flex items-center gap-1 rounded px-2 py-1 transition-colors ${isEditingGrowth ? '' : 'cursor-pointer hover:bg-gray-100'}`}
-                              onClick={() => !isEditingGrowth && setIsEditingGrowth(true)}
-                            >
-                              {isEditingGrowth ? (
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="number"
-                                    min="-100"
-                                    max="200"
-                                    value={tempGrowthRate}
-                                    onChange={(e) => setTempGrowthRate(Math.max(-100, Math.min(200, parseInt(e.target.value) || 0)))}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        handleGrowthRateSave();
-                                      } else if (e.key === 'Escape') {
-                                        setIsEditingGrowth(false);
-                                        setTempGrowthRate(growthRate);
-                                      }
-                                    }}
-                                    className="w-14 h-6 text-sm font-medium text-gray-900 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2"
-                                    autoFocus
-                                  />
-                                  <span className="text-sm text-gray-600">%</span>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleGrowthRateSave();
-                                    }}
-                                    className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setIsEditingGrowth(false);
-                                      setTempGrowthRate(growthRate);
-                                    }}
-                                    className="p-1 text-gray-500 hover:bg-gray-200 rounded transition-colors"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
+                            <div className="text-xs text-gray-500 mb-1">AI 大盘增速预测模型</div>
+                            <div className="text-xs text-green-700 font-medium mb-2">
+                              系统已启用（基于各阶段历史表现动态拟合）
+                            </div>
+                            <div className="text-xs text-gray-800 font-bold mb-1">核心计算公式</div>
+                            <div className="flex items-start gap-1">
+                              <code className="text-xs bg-white border border-gray-200 px-2 py-1 rounded flex-1">
+                                预测分日自然水位 = 对应日期历史还原自然水位 × (1 + 该日期所属大促阶段的同比增速)
+                              </code>
+                              <div className="relative group">
+                                <svg className="w-4 h-4 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  历史还原自然水位已剥离该历史日期的所有大促预算、补贴及主动流量投入，仅保留大促日期用户心智带来的自然购买增量。
                                 </div>
-                              ) : (
-                                <>
-                                  <div className="text-sm font-medium text-gray-900">+{growthRate}%</div>
-                                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                  </svg>
-                                </>
-                              )}
+                              </div>
                             </div>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -6393,14 +6946,23 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             <div className="flex-1">
                               <h4 className="text-sm font-semibold text-gray-900 mb-2">AI 预测结论</h4>
                               <div className="text-xs text-gray-600 space-y-1">
-                                <p>基于 <strong className="text-blue-700">{currentConfig.name}</strong> 历史数据，相似度达 <strong className="text-green-700">92%</strong>，已生成自然水位GMV预测结果。</p>
-                                <p>预测结果显示，系统预计{promotionType === '618' ? '618' : promotionType}大促全周期自然水位GMV约为 <strong className="text-green-700">{naturalWaterLevelTotal.toLocaleString()}万</strong>。</p>
+                                <p>基于 2025/2024/2023 年3场618大促历史数据（与2025年618匹配度最高，相似度达 <strong className="text-green-700">92%</strong>），已生成自然水位GMV分日预测结果。</p>
+                                <p>预测结果显示，系统预计本次618大促全周期自然水位GMV约为 <strong className="text-green-700">18,900万</strong>（与下方系统预测值完全一致）。</p>
+                              </div>
+                              
+                              <div className="mt-3 pt-3 border-t border-green-200">
+                                <h5 className="text-xs font-semibold text-gray-900 mb-2">【AI 预测依据】</h5>
+                                <div className="text-xs text-gray-600 space-y-1">
+                                  <p>• 历史基准：3场历史大促还原后全周期自然水位加权拟合总和为 17,182 万（权重分配：2025年占60% / 2024年占30% / 2023年占10%）。</p>
+                                  <p>• 增速适配：按大促阶段动态叠加同比增速（全周期平均+10%，核心爆发期（BigDay）动态调整为 +14.1%）。</p>
+                                  <p>• 校验说明：最终预测结果与近3个月平销期大盘增长趋势一致。</p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       )}
-                      
+
                       {/* 步骤1底部操作栏 */}
                       {!allStepsLocked && (
                         <div className="bg-gray-50 border-t border-gray-200 p-4 -mx-6 -mb-6 rounded-b-xl">
@@ -6496,21 +7058,158 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       
-                      {/* 自然水位预测结果 */}
-                      <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-gray-700">自然水位预测完成</span>
+                      {/* 人工输入增量目标 - 重新设计样式 */}
+                      <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm mb-4">
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20V10"/>
+                              <path d="M18 20V4"/>
+                              <path d="M6 20v-4"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-800">人工输入增量目标</h3>
+                            <p className="text-xs text-gray-500">配置您期望的大促增长目标</p>
+                          </div>
                         </div>
-                        <div className="p-3 bg-green-50 rounded-lg text-center">
-                          <span className="text-xs text-gray-600">自然水位GMV合计：</span>
-                          <span className="text-lg font-bold text-green-700 ml-2">
-                            {naturalWaterLevelData.reduce((sum, d) => sum + d.value, 0).toLocaleString()}万
-                          </span>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                              </svg>
+                              增量目标（%）
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={step2GrowthPercentage}
+                                onFocus={() => setFocusedInput('percentage')}
+                                onBlur={() => setFocusedInput(null)}
+                                onChange={(e) => {
+                                  setStep2GrowthPercentage(e.target.value);
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:outline-none transition-all ${
+                                  focusedInput === 'percentage' 
+                                    ? 'border-blue-500 bg-white shadow-md' 
+                                    : focusedInput !== null 
+                                      ? 'border-gray-100 text-gray-400' 
+                                      : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                placeholder="30"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">%</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                              </svg>
+                              增量GMV目标（万元）
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={step2GrowthGMV}
+                                onFocus={() => setFocusedInput('gmv')}
+                                onBlur={() => setFocusedInput(null)}
+                                onChange={(e) => {
+                                  setStep2GrowthGMV(e.target.value);
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:outline-none transition-all ${
+                                  focusedInput === 'gmv' 
+                                    ? 'border-blue-500 bg-white shadow-md' 
+                                    : focusedInput !== null 
+                                      ? 'border-gray-100 text-gray-400' 
+                                      : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                placeholder="3540"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">万</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 21V9"/>
+                              </svg>
+                              全周期GMV目标（万元）
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={step2TotalGMV}
+                                onFocus={() => setFocusedInput('total')}
+                                onBlur={() => setFocusedInput(null)}
+                                onChange={(e) => {
+                                  setStep2TotalGMV(e.target.value);
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:outline-none transition-all ${
+                                  focusedInput === 'total' 
+                                    ? 'border-blue-500 bg-white shadow-md' 
+                                    : focusedInput !== null 
+                                      ? 'border-gray-100 text-gray-400' 
+                                      : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                placeholder="15340"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">万</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* 计算展示区域 */}
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                          <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-[120px] text-center">
+                              <div className="text-xs text-gray-500 mb-1">自然水位GMV</div>
+                              <div className="text-xl font-bold text-gray-700">{naturalWaterLevelTotal.toLocaleString()}</div>
+                              <div className="text-xs text-gray-400">万</div>
+                            </div>
+                            
+                            <div className="text-2xl text-gray-300 font-light">+</div>
+                            
+                            <div className="flex-1 min-w-[120px] text-center">
+                              <div className="text-xs text-gray-500 mb-1">增量目标</div>
+                              <div className="text-xl font-bold text-blue-600">+{step2GrowthGMV.toLocaleString()}</div>
+                              <div className="text-xs text-gray-400">万 ({step2GrowthPercentage}% 增幅)</div>
+                            </div>
+                            
+                            <div className="text-2xl text-gray-300 font-light">=</div>
+                            
+                            <div className="flex-1 min-w-[120px] text-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                              <div className="text-xs text-gray-500 mb-1">全周期GMV目标</div>
+                              <div className="text-2xl font-bold text-green-700">{step2TotalGMV.toLocaleString()}</div>
+                              <div className="text-xs text-gray-400">万</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       
-                      {/* 阶段配置 */}
+                      {/* 阶段配置 - 下移并重构 */}
                       <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
@@ -6564,7 +7263,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                         
                         <div className="space-y-3">
-                          {phases.map((phase, index) => (
+                          {phaseAllocation.map((phase, index) => (
                             <div key={phase.id} className="flex items-center gap-3">
                               <span className="w-16 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 font-medium">
                                 阶段{index + 1}
@@ -6573,10 +7272,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 type="text"
                                 value={phase.name}
                                 onChange={(e) => {
-                                  const newPhases = phases.map(p => 
+                                  const newAllocation = phaseAllocation.map(p => 
                                     p.id === phase.id ? { ...p, name: e.target.value } : p
                                   );
-                                  setPhases(newPhases);
+                                  setPhaseAllocation(newAllocation);
                                 }}
                                 className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 placeholder="阶段名"
@@ -6585,15 +7284,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 type="date"
                                 value={phase.startDate}
                                 onChange={(e) => {
-                                  const newPhases = phases.map(p => 
+                                  const newAllocation = phaseAllocation.map(p => 
                                     p.id === phase.id ? { ...p, startDate: e.target.value } : p
                                   );
-                                  setPhases(newPhases);
-                                  if (stepCalculated[1]) {
-                                    const newConfigModified = [...stepConfigModified];
-                                    newConfigModified[1] = true;
-                                    setStepConfigModified(newConfigModified);
-                                  }
+                                  setPhaseAllocation(newAllocation);
                                 }}
                                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
@@ -6602,10 +7296,191 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 type="date"
                                 value={phase.endDate}
                                 onChange={(e) => {
-                                  const newPhases = phases.map(p => 
+                                  const newAllocation = phaseAllocation.map(p => 
                                     p.id === phase.id ? { ...p, endDate: e.target.value } : p
                                   );
-                                  setPhases(newPhases);
+                                  setPhaseAllocation(newAllocation);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">占比(%)</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={phase.percentage}
+                                  onChange={(e) => {
+                                    const newPercentage = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                    const totalTarget = parseInt(step2TotalGMV) || 0;
+                                    const enabledPhases = phaseAllocation.filter(p => p.id !== phase.id);
+                                    const currentTotal = phaseAllocation.reduce((sum, p) => sum + p.percentage, 0);
+                                    const diff = newPercentage - phase.percentage;
+                                    const newAmount = Math.round(totalTarget * newPercentage / 100);
+                                    
+                                    if (enabledPhases.length > 0) {
+                                      const remainingPercentage = 100 - newPercentage;
+                                      const remainingOldSum = enabledPhases.reduce((sum, p) => sum + p.percentage, 0);
+                                      const ratio = remainingOldSum > 0 ? remainingPercentage / remainingOldSum : 1 / enabledPhases.length;
+                                      
+                                      const newAllocation = phaseAllocation.map(p => {
+                                        if (p.id === phase.id) {
+                                          return { ...p, percentage: newPercentage, amount: newAmount };
+                                        } else {
+                                          const adjustedPct = Math.round(p.percentage * ratio);
+                                          const adjustedAmt = Math.round(totalTarget * adjustedPct / 100);
+                                          return { ...p, percentage: adjustedPct, amount: adjustedAmt };
+                                        }
+                                      });
+                                      setPhaseAllocation(newAllocation);
+                                    } else {
+                                      setPhaseAllocation(phaseAllocation.map(p => 
+                                        p.id === phase.id 
+                                          ? { ...p, percentage: newPercentage, amount: newAmount } 
+                                          : p
+                                      ));
+                                    }
+                                  }}
+                                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">金额(万)</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={phase.amount}
+                                  onChange={(e) => {
+                                    const newAmount = Math.max(0, parseInt(e.target.value) || 0);
+                                    const totalTarget = parseInt(step2TotalGMV) || 0;
+                                    const newPercentage = totalTarget > 0 ? Math.round(newAmount / totalTarget * 100) : 0;
+                                    const enabledPhases = phaseAllocation.filter(p => p.id !== phase.id);
+                                    
+                                    if (enabledPhases.length > 0) {
+                                      const remainingAmount = totalTarget - newAmount;
+                                      const remainingOldAmount = enabledPhases.reduce((sum, p) => sum + p.amount, 0);
+                                      const ratio = remainingOldAmount > 0 ? remainingAmount / remainingOldAmount : 1 / enabledPhases.length;
+                                      
+                                      const newAllocation = phaseAllocation.map(p => {
+                                        if (p.id === phase.id) {
+                                          return { ...p, percentage: newPercentage, amount: newAmount };
+                                        } else {
+                                          const adjustedAmt = Math.round(p.amount * ratio);
+                                          const adjustedPct = totalTarget > 0 ? Math.round(adjustedAmt / totalTarget * 100) : 0;
+                                          return { ...p, percentage: adjustedPct, amount: adjustedAmt };
+                                        }
+                                      });
+                                      setPhaseAllocation(newAllocation);
+                                    } else {
+                                      setPhaseAllocation(phaseAllocation.map(p => 
+                                        p.id === phase.id 
+                                          ? { ...p, percentage: newPercentage, amount: newAmount } 
+                                          : p
+                                      ));
+                                    }
+                                  }}
+                                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              {phaseAllocation.length > 1 && (
+                                <button
+                                  onClick={() => {
+                                    const phaseToDelete = phaseAllocation.find(p => p.id === phase.id);
+                                    if (phaseToDelete) {
+                                      const remainingPhases = phaseAllocation.filter(p => p.id !== phase.id);
+                                      const totalTarget = parseInt(step2TotalGMV) || 0;
+                                      const oldRemainingSum = remainingPhases.reduce((sum, p) => sum + p.percentage, 0);
+                                      
+                                      if (remainingPhases.length > 0 && oldRemainingSum > 0) {
+                                        const ratio = 100 / oldRemainingSum;
+                                        const newAllocation = remainingPhases.map(p => {
+                                          const adjustedPct = Math.round(p.percentage * ratio);
+                                          const adjustedAmt = Math.round(totalTarget * adjustedPct / 100);
+                                          return { ...p, percentage: adjustedPct, amount: adjustedAmt };
+                                        });
+                                        setPhaseAllocation(newAllocation);
+                                      } else {
+                                        setPhaseAllocation(remainingPhases);
+                                      }
+                                    }
+                                  }}
+                                  className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
+                                >
+                                  删除
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {/* 总和校验提示 */}
+                          {(() => {
+                            const totalPercentage = phaseAllocation.reduce((sum, p) => sum + p.percentage, 0);
+                            const totalAmount = phaseAllocation.reduce((sum, p) => sum + p.amount, 0);
+                            const targetAmount = parseInt(step2TotalGMV) || 0;
+                            const isValid = totalPercentage === 100 && Math.abs(totalAmount - targetAmount) <= 1;
+                            
+                            if (!isValid) {
+                              return (
+                                <div className="text-xs text-red-600 mt-2">
+                                  当前分配总和与全周期目标不符，请调整。
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                          
+                          <button
+                            onClick={() => {
+                              const totalTarget = parseInt(step2TotalGMV) || 0;
+                              const newPhaseCount = phaseAllocation.length + 1;
+                              const newPhasePercentage = Math.floor(100 / newPhaseCount);
+                              const newPhaseAmount = Math.round(totalTarget * newPhasePercentage / 100);
+                              
+                              const remainingPercentage = 100 - newPhasePercentage;
+                              const oldPercentageSum = phaseAllocation.reduce((sum, p) => sum + p.percentage, 0);
+                              const ratio = oldPercentageSum > 0 ? remainingPercentage / oldPercentageSum : 1 / phaseAllocation.length;
+                              
+                              const adjustedExisting = phaseAllocation.map(p => {
+                                const adjustedPct = Math.round(p.percentage * ratio);
+                                const adjustedAmt = Math.round(totalTarget * adjustedPct / 100);
+                                return { ...p, percentage: adjustedPct, amount: adjustedAmt };
+                              });
+                              
+                              setPhaseAllocation([
+                                ...adjustedExisting,
+                                { 
+                                  id: Date.now(), 
+                                  name: '', 
+                                  startDate: '', 
+                                  endDate: '', 
+                                  percentage: newPhasePercentage, 
+                                  amount: newPhaseAmount 
+                                }
+                              ]);
+                            }}
+                            className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                          >
+                            + 添加阶段
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* BigDay配置 */}
+                      <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⭐</span>
+                          <span className="text-sm font-medium text-gray-700">BigDay设置</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {bigDays.map((day, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <input
+                                type="date"
+                                value={day}
+                                onChange={(e) => {
+                                  const newBigDays = [...bigDays];
+                                  newBigDays[index] = e.target.value;
+                                  setBigDays(newBigDays);
                                   if (stepCalculated[1]) {
                                     const newConfigModified = [...stepConfigModified];
                                     newConfigModified[1] = true;
@@ -6614,354 +7489,34 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 }}
                                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
-                              {phases.length > 1 && (
-                                <button
-                                  onClick={() => setPhases(phases.filter(p => p.id !== phase.id))}
-                                  className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
-                                >
-                                  删除
-                                </button>
-                              )}
+                              <button
+                                onClick={() => {
+                                  setBigDays(bigDays.filter((_, i) => i !== index));
+                                  if (stepCalculated[1]) {
+                                    const newConfigModified = [...stepConfigModified];
+                                    newConfigModified[1] = true;
+                                    setStepConfigModified(newConfigModified);
+                                  }
+                                }}
+                                className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
+                              >
+                                ×
+                              </button>
                             </div>
                           ))}
                           <button
-                            onClick={() => setPhases([...phases, { id: Date.now(), name: '', startDate: '', endDate: '', isBigDay: false, aiTarget: 0, manualTarget: 0, status: 'pending' }])}
-                            className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                            onClick={() => {
+                              setBigDays([...bigDays, '2026-06-18']);
+                              if (stepCalculated[1]) {
+                                const newConfigModified = [...stepConfigModified];
+                                newConfigModified[1] = true;
+                                setStepConfigModified(newConfigModified);
+                              }
+                            }}
+                            className="px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-500"
                           >
-                            + 添加阶段
+                            + 添加BigDay
                           </button>
-                        </div>
-                      </div>
-                      
-                      {/* 人工输入区 */}
-                      <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">📝</span>
-                          <span className="text-sm font-medium text-gray-700">人工输入增量目标</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">增量目标（%）</label>
-                            <input
-                              type="number"
-                              value={step2GrowthPercentage}
-                              onFocus={() => setFocusedInput('percentage')}
-                              onBlur={() => setFocusedInput(null)}
-                              onChange={(e) => {
-                                setStep2GrowthPercentage(e.target.value);
-                                if (stepCalculated[1]) {
-                                  const newConfigModified = [...stepConfigModified];
-                                  newConfigModified[1] = true;
-                                  setStepConfigModified(newConfigModified);
-                                }
-                              }}
-                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none transition-colors ${
-                                focusedInput === 'percentage' 
-                                  ? 'border-blue-500 focus:ring-2 focus:ring-blue-500' 
-                                  : focusedInput !== null 
-                                    ? 'border-gray-200 bg-gray-50' 
-                                    : 'border-gray-300'
-                              }`}
-                              placeholder="30"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">增量GMV目标（万元）</label>
-                            <input
-                              type="number"
-                              value={step2GrowthGMV}
-                              onFocus={() => setFocusedInput('gmv')}
-                              onBlur={() => setFocusedInput(null)}
-                              onChange={(e) => {
-                                setStep2GrowthGMV(e.target.value);
-                                if (stepCalculated[1]) {
-                                  const newConfigModified = [...stepConfigModified];
-                                  newConfigModified[1] = true;
-                                  setStepConfigModified(newConfigModified);
-                                }
-                              }}
-                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none transition-colors ${
-                                focusedInput === 'gmv' 
-                                  ? 'border-blue-500 focus:ring-2 focus:ring-blue-500' 
-                                  : focusedInput !== null 
-                                    ? 'border-gray-200 bg-gray-50' 
-                                    : 'border-gray-300'
-                              }`}
-                              placeholder="3540"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">全周期GMV目标（万元）</label>
-                            <input
-                              type="number"
-                              value={step2TotalGMV}
-                              onFocus={() => setFocusedInput('total')}
-                              onBlur={() => setFocusedInput(null)}
-                              onChange={(e) => {
-                                setStep2TotalGMV(e.target.value);
-                                if (stepCalculated[1]) {
-                                  const newConfigModified = [...stepConfigModified];
-                                  newConfigModified[1] = true;
-                                  setStepConfigModified(newConfigModified);
-                                }
-                              }}
-                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none transition-colors ${
-                                focusedInput === 'total' 
-                                  ? 'border-blue-500 focus:ring-2 focus:ring-blue-500' 
-                                  : focusedInput !== null 
-                                    ? 'border-gray-200 bg-gray-50' 
-                                    : 'border-gray-300'
-                              }`}
-                              placeholder="15340"
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* 等式布局的结果展示 */}
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-l-green-500">
-                          <div className="flex items-center justify-between gap-2">
-                            {/* 左侧：自然水位GMV */}
-                            <div className="flex-1 text-center p-3">
-                              <div className="text-xs text-gray-500 mb-1">自然水位GMV</div>
-                              <div className="text-xl font-bold text-gray-600">
-                                {naturalWaterLevelData.reduce((sum, d) => sum + d.value, 0).toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-400">万</div>
-                            </div>
-                            
-                            {/* 加号 */}
-                            <div className="text-2xl font-bold text-gray-400">+</div>
-                            
-                            {/* 中间：增量目标 */}
-                            <div className="flex-1 text-center p-3">
-                              <div className="text-xs text-gray-500 mb-1">增量目标</div>
-                              <div className="text-xl font-bold text-blue-600">
-                                +{parseInt(step2GrowthGMV || '0').toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                万（{step2GrowthPercentage}% 增幅）
-                              </div>
-                            </div>
-                            
-                            {/* 等号 */}
-                            <div className="text-2xl font-bold text-gray-400">=</div>
-                            
-                            {/* 右侧：全周期目标 */}
-                            <div className="flex-1 text-center p-3 bg-green-50 rounded-lg">
-                              <div className="text-xs text-gray-500 mb-1">全周期GMV目标</div>
-                              <div className="text-2xl font-bold text-green-700">
-                                {parseInt(step2TotalGMV || '0').toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-400">万</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* 分阶段目标分配 - 滑块式 */}
-                      <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">🎯</span>
-                          <span className="text-sm font-medium text-gray-700">分阶段目标分配</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-4">
-                          系统已根据历史同等级大促的阶段贡献占比自动分配目标，您可根据本次大促策略调整。拖动滑块调整各阶段占比。
-                        </p>
-                        
-                        {/* 核心滑块区 */}
-                        {phaseConfigs.length > 0 && (
-                          <div className="relative mb-4">
-                            <div 
-                              className="flex h-16 rounded-lg overflow-hidden relative slider-container"
-                              style={{ height: '64px' }}
-                            >
-                              {phaseConfigs.map((phase, index) => {
-                                const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
-                                const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
-                                
-                                return (
-                                  <div
-                                    key={phase.id}
-                                    className="relative flex items-center justify-center cursor-pointer transition-all duration-200 group"
-                                    style={{ 
-                                      width: `${percentage}%`, 
-                                      backgroundColor: phase.color,
-                                      minWidth: '5%'
-                                    }}
-                                    onClick={() => setActivePhase(phase.id)}
-                                  >
-                                    {/* 历史占比参考线 */}
-                                    <div
-                                      className="absolute top-0 bottom-0 w-0.5 bg-white/50"
-                                      style={{ 
-                                        left: `${phase.historicalContributionRatio * 100}%` 
-                                      }}
-                                      title={`历史同期占比：${Math.round(phase.historicalContributionRatio * 100)}%`}
-                                    />
-                                    
-                                    <div className="text-white text-center px-1">
-                                      <div className={`font-medium flex items-center justify-center gap-1 ${draggingDivider === index || draggingDivider === index - 1 ? 'text-lg' : 'text-sm'}`}>
-                                        {phase.name}
-                                        {phase.isLocked && <span>🔒</span>}
-                                      </div>
-                                      <div className={`text-white/90 ${draggingDivider === index || draggingDivider === index - 1 ? 'text-sm' : 'text-xs'}`}>
-                                        ¥{phase.target.toLocaleString()}万 / {Math.round(percentage)}%
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              
-                              {/* 分界滑块 */}
-                              {phaseConfigs.slice(0, -1).map((_, index) => (
-                                <div
-                                  key={`divider-${index}`}
-                                  className="absolute top-0 bottom-0 w-1.5 bg-white/80 cursor-ew-resize hover:bg-white z-10 group"
-                                  style={{ 
-                                    left: `${phaseConfigs.slice(0, index + 1).reduce((sum, p) => {
-                                      const total = phaseConfigs.reduce((s, ph) => s + ph.target, 0);
-                                      return sum + (total > 0 ? (p.target / total) * 100 : 0);
-                                    }, 0)}%`,
-                                    transform: 'translateX(-50%)'
-                                  }}
-                                  onMouseDown={() => setDraggingDivider(index)}
-                                >
-                                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex gap-0.5">
-                                      <div className="w-0.5 h-3 bg-gray-400 rounded-full" />
-                                      <div className="w-0.5 h-3 bg-gray-400 rounded-full" />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* 阶段详情悬浮层 */}
-                        {activePhase && phaseConfigs.find(p => p.id === activePhase) && (
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
-                            {(() => {
-                              const phase = phaseConfigs.find(p => p.id === activePhase)!;
-                              const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
-                              const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
-                              
-                              return (
-                                <div>
-                                  <div className="text-sm font-semibold text-gray-800 mb-3">
-                                    【{phase.name}】
-                                  </div>
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">日期范围：</span>
-                                      <span className="text-gray-800">{phase.startDate} ~ {phase.endDate}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">历史占比：</span>
-                                      <span className="text-gray-800">{Math.round(phase.historicalContributionRatio * 100)}%</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-600">当前目标：</span>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          value={phase.target}
-                                          onChange={(e) => {
-                                            const newValue = parseInt(e.target.value) || 0;
-                                            setPhaseConfigs(phaseConfigs.map(p => 
-                                              p.id === activePhase ? { ...p, target: newValue } : p
-                                            ));
-                                            if (stepCalculated[1]) {
-                                              const newConfigModified = [...stepConfigModified];
-                                              newConfigModified[1] = true;
-                                              setStepConfigModified(newConfigModified);
-                                            }
-                                          }}
-                                          className="w-32 px-2 py-1 border border-gray-300 rounded text-right text-sm"
-                                        />
-                                        <span className="text-gray-800">万 ({Math.round(percentage)}%)</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
-                                    <button
-                                      onClick={() => {
-                                        setPhaseConfigs(phaseConfigs.map(p => 
-                                          p.id === activePhase ? { ...p, isLocked: !p.isLocked } : p
-                                        ));
-                                      }}
-                                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                                    >
-                                      {phase.isLocked ? '解锁占比' : '锁定占比'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
-                                        const newTarget = Math.round(totalTarget * phase.historicalContributionRatio);
-                                        setPhaseConfigs(phaseConfigs.map(p => 
-                                          p.id === activePhase ? { ...p, target: newTarget } : p
-                                        ));
-                                        if (stepCalculated[1]) {
-                                          const newConfigModified = [...stepConfigModified];
-                                          newConfigModified[1] = true;
-                                          setStepConfigModified(newConfigModified);
-                                        }
-                                      }}
-                                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                                    >
-                                      重置为历史占比
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-                        
-                        {/* 底部操作栏 */}
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-700">
-                            总目标：¥{parseFloat(step2TotalGMV).toLocaleString()}万 | 共{phaseConfigs.length}个促销阶段
-                          </div>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => {
-                                const total = parseFloat(step2TotalGMV) || 0;
-                                const historicalRatios = [0.3, 0.35, 0.35, 0.25, 0.55, 0.2];
-                                setPhaseConfigs(phaseConfigs.map((phase, index) => ({
-                                  ...phase,
-                                  target: Math.round(total * (historicalRatios[index] || (1 / phaseConfigs.length))),
-                                  isLocked: false
-                                })));
-                                setIsPhaseAllocationConfirmed(false);
-                              }}
-                              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              重置分配
-                            </button>
-                            <button
-                              onClick={() => {
-                                // 同步到phases状态
-                                const newPhases = phases.map(p => {
-                                  const config = phaseConfigs.find(c => c.id === p.id);
-                                  if (config) {
-                                    return { ...p, manualTarget: config.target };
-                                  }
-                                  return p;
-                                });
-                                setPhases(newPhases);
-                                setIsPhaseAllocationConfirmed(true);
-                              }}
-                              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
-                                isPhaseAllocationConfirmed 
-                                  ? 'bg-green-500 text-white cursor-default' 
-                                  : 'bg-purple-600 text-white hover:bg-purple-700'
-                              }`}
-                              disabled={isPhaseAllocationConfirmed}
-                            >
-                              {isPhaseAllocationConfirmed ? '已确认' : '确认分配'}
-                            </button>
-                          </div>
                         </div>
                       </div>
                       
@@ -7074,471 +7629,77 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <span className="text-2xl">📅</span>
                         <div>
                           <h3 className="font-bold text-gray-900">步骤3：大盘支付GMV分日预测</h3>
-                          <p className="text-xs text-gray-500">基于 Step2 配置的阶段和预算规划，生成分日目标</p>
+                          <p className="text-xs text-gray-500">基于 Step2 配置的阶段和目标，自动预测分日支付GMV</p>
                         </div>
                       </div>
                       
-                      {/* 分日预算规划 - 新版设计 */}
+                      {/* 测算说明与因子确认区 */}
                       <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-4">
                         <div className="p-4 border-b border-gray-200">
                           <div className="flex items-center gap-2">
-                            <span className="text-lg">💰</span>
-                            <span className="text-base font-semibold text-gray-800">分日预算规划</span>
+                            <span className="text-lg">🤖</span>
+                            <span className="text-base font-semibold text-gray-800">测算说明与因子确认</span>
                           </div>
                         </div>
 
-                        {/* 区块 1：AI 智能解析输入区 */}
+                        {/* 区块 A：AI 智能测算结论 Banner */}
                         <div className="p-4 border-b border-gray-200">
-                          {/* Tab 切换 */}
-                          <div className="flex gap-1 mb-3 bg-gray-100 rounded-lg p-1">
-                            <button
-                              className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 bg-white shadow-sm text-[#3370FF]"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                              自然语言解析
-                            </button>
-                            <button
-                              className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 text-gray-600 hover:bg-gray-200"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                              </svg>
-                              文件上传解析
-                            </button>
-                          </div>
-
-                          {/* 内容区域 */}
-                          <div className="relative">
-                            <textarea
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] focus:border-transparent text-sm resize-none"
-                              rows={2}
-                              placeholder="描述预算节奏，例如：大促总预算500万，其中消费券300万且80%投入在6/18 BigDay，其余按自然水位分配..."
-                              defaultValue="大促总预算1500万，其中消费券800万重点投入在6/18 BigDay，追补预算400万按自然水位分布，领航预算300万均匀投放..."
-                            />
-                            <div className="flex justify-end mt-2">
-                              <button className="px-4 py-2 bg-[#3370FF] text-white rounded-lg text-sm font-medium hover:bg-[#2954cc] transition-colors flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                </svg>
-                                智能解析与填充
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 区块 2：结构化参数表单 */}
-                        <div className="p-4 border-b border-gray-200">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* 子区块 A: 资金投入配置 */}
-                            <div>
-                              <div className="flex items-center gap-2 mb-4">
-                                <h4 className="text-sm font-semibold text-gray-800">资金投入配置</h4>
-                                <span className="px-2 py-0.5 bg-[#3370FF]/10 text-[#3370FF] text-xs font-medium rounded-full">
-                                  资管填写
-                                </span>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 text-sm">ℹ️</span>
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">总预算</label>
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                      defaultValue="1500"
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">万元</span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">消费券预算</label>
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                      defaultValue="800"
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">万元</span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">追补预算</label>
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                      defaultValue="400"
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">万元</span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">领航预算</label>
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                      defaultValue="300"
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">万元</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* 子区块 B: 兑换效率假设 */}
-                            <div>
-                              <div className="flex items-center gap-2 mb-4">
-                                <h4 className="text-sm font-semibold text-gray-800">兑换效率假设</h4>
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                                  DS模型输出
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">全局增量兑换比</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                    defaultValue="1.25"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">消费券增量兑换比</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                    defaultValue="1.35"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">追补增量兑换比</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                    defaultValue="1.18"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600 mb-1.5">领航增量兑换比</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3370FF] text-sm"
-                                    defaultValue="1.22"
-                                  />
+                              <div className="flex-1">
+                                <p className="text-sm text-gray-700">
+                                  系统已从大促预算模块自动获取 <span className="font-semibold text-blue-700">1,500万</span> 预算的分日消耗预测。结合 Step1 自然水位与历史阶段兑换比模型（综合增量兑换比约 <span className="font-semibold text-blue-700">6.5</span>），已生成最终分日支付 GMV 预测。
+                                </p>
+                                <div className="mt-3 flex items-center gap-2">
+                                  <button 
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    查看测算公式
+                                  </button>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* 区块 3：分阶段预算分布矩阵 */}
+                        {/* 区块 B：核心测算因子展示区 */}
                         <div className="p-4">
                           <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-semibold text-gray-800">分阶段预算分布</h4>
-                            <div className="flex items-center gap-3">
-                              <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3370FF]">
-                                <option>按阶段天数均分</option>
-                                <option>按自然水位同比例分布</option>
-                                <option>向 BigDay 倾斜</option>
-                              </select>
-                              <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                                应用分配
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr className="bg-gray-50">
-                                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 border border-gray-200 row-span-2" rowSpan={2}>预算类型</th>
-                                  <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-600 border border-gray-200 col-span-3" colSpan={3}>预热期 (6/15-6/17)</th>
-                                  <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-600 border border-gray-200 bg-orange-50" colSpan={1}>
-                                    <div className="flex items-center justify-center gap-1">
-                                      <span>🔥</span>
-                                      <span>爆发期 (6/18)</span>
-                                    </div>
-                                  </th>
-                                  <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-600 border border-gray-200 col-span-2" colSpan={2}>返场期 (6/19-6/20)</th>
-                                  <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-600 border border-gray-200 bg-gray-100 row-span-2" rowSpan={2}>总计</th>
-                                </tr>
-                                <tr className="bg-gray-50">
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200">6/15</th>
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200">6/16</th>
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200">6/17</th>
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200 bg-orange-50">6/18</th>
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200">6/19</th>
-                                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 border border-gray-200">6/20</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {/* 一级节点：大促总预算 */}
-                                <tr className="bg-gray-50">
-                                  <td className="px-3 py-2 text-xs text-gray-800 border border-gray-200 font-semibold flex items-center gap-2">
-                                    <button className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600">
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                      </svg>
-                                    </button>
-                                    大促总预算
-                                  </td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200">480</td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200">380</td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200">320</td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200 bg-orange-50">820</td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200">160</td>
-                                  <td className="px-2 py-2 text-center text-xs font-semibold text-gray-700 border border-gray-200">300</td>
-                                  <td className="px-3 py-2 text-center text-xs font-bold text-gray-800 border border-gray-200 bg-gray-100">1,500</td>
-                                </tr>
-                                {/* 二级节点：消费券预算 */}
-                                <tr>
-                                  <td className="px-3 py-2 text-xs text-gray-700 border border-gray-200 font-medium pl-8">消费券预算</td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="40" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="40" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="40" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200 bg-orange-50">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="540" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="60" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="80" />
-                                  </td>
-                                  <td className="px-3 py-2 text-center text-xs font-semibold text-gray-800 border border-gray-200 bg-gray-100">800</td>
-                                </tr>
-                                {/* 二级节点：追补预算 */}
-                                <tr>
-                                  <td className="px-3 py-2 text-xs text-gray-700 border border-gray-200 font-medium pl-8">追补预算</td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="160" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="0" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="0" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200 bg-orange-50">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="160" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="40" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="40" />
-                                  </td>
-                                  <td className="px-3 py-2 text-center text-xs font-semibold text-gray-800 border border-gray-200 bg-gray-100">400</td>
-                                </tr>
-                                {/* 二级节点：领航预算 */}
-                                <tr>
-                                  <td className="px-3 py-2 text-xs text-gray-700 border border-gray-200 font-medium pl-8">领航预算</td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="280" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="340" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="280" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200 bg-orange-50">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="120" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="60" />
-                                  </td>
-                                  <td className="px-2 py-2 border border-gray-200">
-                                    <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#3370FF]" defaultValue="180" />
-                                  </td>
-                                  <td className="px-3 py-2 text-center text-xs font-semibold text-gray-800 border border-gray-200 bg-gray-100">300</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                        
-                        {/* 分阶段目标完成进度预测 */}
-                        <div className="p-4 border-t border-gray-200">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-semibold text-gray-800">分阶段目标完成进度预测</h4>
-                            {phaseConfigs.length > 0 && (
-                              <span className="text-sm text-gray-600">
-                                总目标: ¥{phaseConfigs.reduce((sum, p) => sum + p.target, 0).toLocaleString()}万
-                              </span>
-                            )}
+                            <h4 className="text-sm font-semibold text-gray-800">核心测算因子</h4>
+                            <button className="text-xs text-gray-600 hover:text-gray-700 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                              微调参数
+                            </button>
                           </div>
                           
-                          {!isPhaseAllocationConfirmed || phaseConfigs.length === 0 ? (
-                            <div className="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">
-                              请先在Step2确认分阶段目标分配
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                              <div className="text-xs text-gray-500 mb-1">总预算金额</div>
+                              <div className="text-2xl font-bold text-gray-800">1500万</div>
+                              <div className="text-xs text-gray-400 mt-1">来源 - 预算规划系统</div>
                             </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {/* 分阶段时间区间标记带 */}
-                              <div className="relative h-16 bg-gray-50 rounded-lg overflow-hidden">
-                                {phaseConfigs.map((phase, index) => {
-                                  const totalTarget = phaseConfigs.reduce((sum, p) => sum + p.target, 0);
-                                  const percentage = totalTarget > 0 ? (phase.target / totalTarget) * 100 : 0;
-                                  
-                                  // 模拟预测完成率
-                                  const completionRate = 85 + Math.random() * 30; // 85%-115%
-                                  const statusColor = completionRate >= 100 ? '#10B981' : completionRate >= 90 ? '#F59E0B' : '#EF4444';
-                                  
-                                  return (
-                                    <div
-                                      key={phase.id}
-                                      className="absolute h-full flex flex-col justify-center items-center px-2 cursor-pointer transition-all hover:opacity-90"
-                                      style={{
-                                        left: `${phaseConfigs.slice(0, index).reduce((sum, p) => {
-                                          const t = phaseConfigs.reduce((s, ph) => s + ph.target, 0);
-                                          return sum + (t > 0 ? (p.target / t) * 100 : 0);
-                                        }, 0)}%`,
-                                        width: `${percentage}%`,
-                                        backgroundColor: phase.color,
-                                        opacity: 0.2
-                                      }}
-                                      onClick={() => {
-                                        setCalculationStep(1);
-                                        setActivePhase(phase.id);
-                                      }}
-                                    >
-                                      {/* 阶段信息 */}
-                                      <div className="text-center text-xs">
-                                        <div className="font-medium" style={{ color: phase.color }}>
-                                          {phase.name}
-                                        </div>
-                                        <div className="text-gray-600">
-                                          ¥{phase.target.toLocaleString()}万
-                                        </div>
-                                        <div 
-                                          className="font-semibold"
-                                          style={{ color: statusColor }}
-                                        >
-                                          {completionRate.toFixed(0)}%
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              
-                              {/* 详细列表 */}
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                  <thead className="bg-gray-50">
-                                    <tr>
-                                      <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">阶段</th>
-                                      <th className="py-2 px-3 text-center text-xs font-semibold text-gray-600">日期区间</th>
-                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">目标GMV</th>
-                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">预测GMV</th>
-                                      <th className="py-2 px-3 text-right text-xs font-semibold text-gray-600">完成率</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-200">
-                                    {phaseConfigs.map((phase) => {
-                                      const completionRate = 85 + Math.random() * 30;
-                                      const predictedGmv = Math.round(phase.target * completionRate / 100);
-                                      const statusColor = completionRate >= 100 ? 'text-green-600' : completionRate >= 90 ? 'text-yellow-600' : 'text-red-600';
-                                      
-                                      return (
-                                        <tr key={phase.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setCalculationStep(1)}>
-                                          <td className="py-2 px-3 font-medium">
-                                            <span className="inline-flex items-center gap-1">
-                                              <span 
-                                                className="w-2 h-2 rounded-full"
-                                                style={{ backgroundColor: phase.color }}
-                                              />
-                                              {phase.name}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 px-3 text-center text-gray-600">
-                                            {phase.startDate} ~ {phase.endDate}
-                                          </td>
-                                          <td className="py-2 px-3 text-right text-gray-700">
-                                            ¥{phase.target.toLocaleString()}万
-                                          </td>
-                                          <td className="py-2 px-3 text-right text-gray-700">
-                                            ¥{predictedGmv.toLocaleString()}万
-                                          </td>
-                                          <td className={`py-2 px-3 text-right font-semibold ${statusColor}`}>
-                                            {completionRate.toFixed(1)}%
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                              <div className="text-xs text-gray-500 mb-1">综合增量兑换比</div>
+                              <div className="text-2xl font-bold text-gray-800">6.5</div>
+                              <div className="text-xs text-gray-400 mt-1">来源 - 历史相似大促模型</div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* BigDay配置 */}
-                      <div className="bg-white rounded-lg p-4 border border-blue-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">⭐</span>
-                          <span className="text-sm font-medium text-gray-700">BigDay设置</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {bigDays.map((day, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <input
-                                type="date"
-                                value={day}
-                                onChange={(e) => {
-                                  const newBigDays = [...bigDays];
-                                  newBigDays[index] = e.target.value;
-                                  setBigDays(newBigDays);
-                                  if (stepCalculated[2]) {
-                                    const newConfigModified = [...stepConfigModified];
-                                    newConfigModified[2] = true;
-                                    setStepConfigModified(newConfigModified);
-                                  }
-                                }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <button
-                                onClick={() => {
-                                  setBigDays(bigDays.filter((_, i) => i !== index));
-                                  if (stepCalculated[2]) {
-                                    const newConfigModified = [...stepConfigModified];
-                                    newConfigModified[2] = true;
-                                    setStepConfigModified(newConfigModified);
-                                  }
-                                }}
-                                className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
-                              >
-                                ×
-                              </button>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                              <div className="text-xs text-gray-500 mb-1">消费券兑换比</div>
+                              <div className="text-2xl font-bold text-gray-800">1.35</div>
                             </div>
-                          ))}
-                          <button
-                            onClick={() => {
-                              setBigDays([...bigDays, '2026-06-18']);
-                              if (stepCalculated[2]) {
-                                const newConfigModified = [...stepConfigModified];
-                                newConfigModified[2] = true;
-                                setStepConfigModified(newConfigModified);
-                              }
-                            }}
-                            className="px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-500"
-                          >
-                            + 添加BigDay
-                          </button>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                              <div className="text-xs text-gray-500 mb-1">追补兑换比</div>
+                              <div className="text-2xl font-bold text-gray-800">1.18</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       
@@ -7665,120 +7826,162 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       
-                      {/* （一）分日支付 GMV 目标（可编辑，从 Step3 自动同步） */}
-                      <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
+                      {/* AI预测说明与公式区块 */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+                        {/* 顶部：AI选取说明 */}
+                        <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
+                          <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span className="text-purple-600 text-sm">✨</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-700">
+                              发货期参照基准：系统已自动匹配「2025年618大促发货周期」作为历史参照（相似度92%）
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              系统已为大促周期内每一天匹配对应历史相似天的动态发货率，点击每日计算说明可查看明细
+                            </p>
+                            <button
+                              onClick={() => setExpandedReference(!expandedReference)}
+                              className="text-xs text-purple-600 hover:text-purple-700 font-medium mt-2 flex items-center gap-1"
+                            >
+                              {expandedReference ? '收起匹配特征' : '查看匹配特征'}
+                              <svg className={`w-3 h-3 transition-transform ${expandedReference ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedReference && (
+                              <div className="mt-2 p-2 bg-purple-50 rounded text-xs text-gray-600">
+                                <p>• 节奏一致：预热期-爆发期-返场期时间比例相同</p>
+                                <p>• BigDay分布一致：都在大促中期设置核心爆发日</p>
+                                <p>• 品类结构相似：核心品类订单占比偏差&lt;5%</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* 底部：计算公式 */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-800 mb-3">核心计算公式</h4>
+                          <div className="bg-gray-50 rounded p-3">
+                            <p className="text-sm font-mono">
+                              <span className="text-blue-600" title="单日发货GMV（T日）">单日发货GMV(T日)</span>{' '}
+                              = <span className="text-gray-500">[</span>{' '}
+                              (<span className="text-orange-600" title="当日支付当日发货订单占比">T日支付GMV</span> × <span className="text-green-600" title="T0发货率">T0发货率</span>) +{' '}
+                              (<span className="text-orange-600" title="前1日支付当日发货订单占比">T-1日支付GMV</span> × <span className="text-green-600" title="T-1发货率">T-1发货率</span>) +{' '}
+                              (<span className="text-orange-600" title="前2日支付当日发货订单占比">T-2日支付GMV</span> × <span className="text-green-600" title="T-2发货率">T-2发货率</span>)
+                              {' '}<span className="text-gray-500">]</span> ÷ <span className="text-purple-600" title="支付后2日内完成发货的订单GMV占比">T+2发货GMV占比</span>
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">鼠标悬停参数可查看说明</p>
+                        </div>
+                      </div>
+                      
+                      {/* 合并的分日目标表格 */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                         <div className="flex items-center gap-2 mb-3">
                           <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-gray-700">（一）分日支付 GMV 目标（可编辑，从 Step3 自动同步）</span>
+                          <span className="text-sm font-medium text-gray-700">分日目标与预测</span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-3">支持人工修改单天支付目标，修改后自动校验总金额与 Step2 大盘总目标一致性，修改后点击「重新测算发货 GMV」更新结果</p>
+                        <p className="text-xs text-gray-500 mb-3">左侧可编辑支付GMV，右侧显示自动计算的发货GMV</p>
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th className="py-2 px-3 text-left">日期</th>
-                                <th className="py-2 px-3 text-center">阶段</th>
-                                <th className="py-2 px-3 text-right">AI 建议支付 GMV（万）</th>
-                                <th className="py-2 px-3 text-right">人工修正支付 GMV（万）</th>
-                                <th className="py-2 px-3 text-center">预估结算率</th>
-                                <th className="py-2 px-3 text-right">结算 GMV（万）</th>
-                                <th className="py-2 px-3 text-center">说明</th>
+                                <th className="py-2 px-2 text-left">日期</th>
+                                <th className="py-2 px-2 text-center">阶段</th>
+                                <th className="py-2 px-2 text-right border-r border-gray-300">人工支付GMV（万）</th>
+                                <th className="py-2 px-2 text-right">预测发货GMV（万）</th>
+                                <th className="py-2 px-2 text-center">计算说明</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y">
-                              {dailyGmvTargets.map((target, index) => {
-                                const isBigDay = index === 3;
-                                const isWeekend = index === 0 || index === 5;
-                                const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
-                                const settlementGmv = Math.round(target.manualTarget * settlementRate);
-                                return (
-                                  <tr key={index}>
-                                    <td className="py-2 px-3 font-medium">{target.date.split('-').slice(1).join('/')}</td>
-                                    <td className="py-2 px-3 text-center text-gray-600">{target.phase}</td>
-                                    <td className="py-2 px-3 text-right text-gray-500">{target.aiTarget.toLocaleString()}</td>
-                                    <td className="py-2 px-3">
-                                      <input
-                                        type="number"
-                                        value={target.manualTarget}
-                                        onChange={(e) => {
-                                          const newTargets = [...dailyGmvTargets];
-                                          newTargets[index].manualTarget = parseInt(e.target.value) || 0;
-                                          setDailyGmvTargets(newTargets);
-                                        }}
-                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      />
+                              {(() => {
+                                const dates = ['06/15', '06/16', '06/17', '06/18', '06/19', '06/20'];
+                                const phases = ['预热期', '预热期', '预热期', '爆发期', '返场期', '返场期'];
+                                const payGMVData = dailyGmvTargets.map(t => ({ payGMV: t.manualTarget }));
+                                let totalPay = 0;
+                                let totalShipment = 0;
+                                
+                                return dates.map((date, index) => {
+                                  const isBigDay = index === 3;
+                                  const shipment = calculateDailyShipmentGMV(index, payGMVData);
+                                  totalPay += dailyGmvTargets[index].manualTarget;
+                                  totalShipment += shipment.value;
+                                  
+                                  const tDate = dates[index];
+                                  const t1Date = index > 0 ? dates[index - 1] : '06/14';
+                                  const t2Date = index > 1 ? dates[index - 2] : '06/13';
+                                  
+                                  return (
+                                    <tr key={index} className={isBigDay ? 'bg-orange-50' : ''}>
+                                      <td className="py-2 px-2 font-medium text-xs">{date}</td>
+                                      <td className="py-2 px-2 text-center text-gray-600 text-xs">{phases[index]}</td>
+                                      <td className="py-2 px-2 border-r border-gray-300">
+                                        <input
+                                          type="number"
+                                          value={dailyGmvTargets[index].manualTarget}
+                                          onChange={(e) => {
+                                            const newTargets = [...dailyGmvTargets];
+                                            newTargets[index].manualTarget = parseInt(e.target.value) || 0;
+                                            setDailyGmvTargets(newTargets);
+                                          }}
+                                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-2 text-right font-medium text-blue-700 text-xs">
+                                        {shipment.value.toLocaleString()}
+                                      </td>
+                                      <td className="py-2 px-2 text-center relative">
+                                        <button
+                                          onClick={() => setShowCalculationDetail(showCalculationDetail === index ? null : index)}
+                                          className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                        >
+                                          查看说明
+                                        </button>
+                                        {showCalculationDetail === index && (
+                                          <div className="absolute z-10 bg-white border border-gray-300 rounded-lg p-3 shadow-lg mt-1 text-left w-64 right-0">
+                                            <p className="text-xs font-semibold text-gray-800 mb-2">
+                                              📅 {tDate}{isBigDay ? ' BigDay' : ''} 计算参数：
+                                            </p>
+                                            <p className="text-xs text-gray-600 mb-1">
+                                              T0发货率 = {(shipment.rates.t0 * 100).toFixed(0)}%, T-1发货率 = {(shipment.rates.t1 * 100).toFixed(0)}%, T-2发货率 = {(shipment.rates.t2 * 100).toFixed(0)}%
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">
+                                              计算过程：
+                                            </p>
+                                            <p className="text-xs text-gray-500 font-mono">
+                                              ({shipment.t0Pay.toLocaleString()}×{shipment.rates.t0.toFixed(2)} + {shipment.t1Pay.toLocaleString()}×{shipment.rates.t1.toFixed(2)} + {shipment.t2Pay.toLocaleString()}×{shipment.rates.t2.toFixed(2)}) ÷ {shipment.rates.tPlus2.toFixed(2)} = {shipment.value.toLocaleString()}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                }).concat([
+                                  <tr key="total" className="bg-gray-50 font-bold">
+                                    <td className="py-2 px-2 text-xs">合计</td>
+                                    <td className="py-2 px-2 text-center text-xs">-</td>
+                                    <td className="py-2 px-2 text-right border-r border-gray-300 text-green-700 text-xs">
+                                      {dailyGmvTargets.reduce((sum, t) => sum + t.manualTarget, 0).toLocaleString()}
                                     </td>
-                                    <td className="py-2 px-3 text-center text-cyan-600">{(settlementRate * 100).toFixed(1)}%</td>
-                                    <td className="py-2 px-3 text-right text-cyan-700 font-medium">{settlementGmv.toLocaleString()}</td>
-                                    <td className="py-2 px-3 text-center text-gray-400 text-xs">-</td>
+                                    <td className="py-2 px-2 text-right text-blue-800 text-xs">
+                                      {(() => {
+                                        const payGMVData = dailyGmvTargets.map(t => ({ payGMV: t.manualTarget }));
+                                        return dates.reduce((sum, _, index) => {
+                                          return sum + calculateDailyShipmentGMV(index, payGMVData).value;
+                                        }, 0).toLocaleString();
+                                      })()}
+                                    </td>
+                                    <td className="py-2 px-2 text-center text-xs text-gray-500">与Step2总发货目标一致</td>
                                   </tr>
-                                );
-                              })}
-                              <tr className="bg-gray-50 font-bold">
-                                <td className="py-2 px-3">合计</td>
-                                <td className="py-2 px-3 text-center">-</td>
-                                <td className="py-2 px-3 text-right">{dailyGmvTargets.reduce((sum, t) => sum + t.aiTarget, 0).toLocaleString()}</td>
-                                <td className="py-2 px-3 text-right font-medium text-green-700">
-                                  {dailyGmvTargets.reduce((sum, t) => sum + t.manualTarget, 0).toLocaleString()}
-                                </td>
-                                <td className="py-2 px-3 text-center text-cyan-600">-</td>
-                                <td className="py-2 px-3 text-right font-medium text-cyan-700">
-                                  {dailyGmvTargets.reduce((sum, t, index) => {
-                                    const isBigDay = index === 3;
-                                    const isWeekend = index === 0 || index === 5;
-                                    const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
-                                    return sum + Math.round(t.manualTarget * settlementRate);
-                                  }, 0).toLocaleString()}
-                                </td>
-                                <td className="py-2 px-3 text-center text-xs text-gray-500">与 Step2 大盘总目标一致</td>
-                              </tr>
+                                ]);
+                              })()}
                             </tbody>
                           </table>
                         </div>
                       </div>
                       
-                      {/* （二）发货参数配置（只读，DS 团队维护，不可手动修改） */}
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Settings className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">（二）发货参数配置（只读，DS 团队维护，不可手动修改）</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-3">hover 显示口径说明，参数为空时提示「DS 发货参数未同步，请联系 DS 团队更新数据」</p>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="py-2 px-3 text-left">参数</th>
-                                <th className="py-2 px-3 text-center">数值</th>
-                                <th className="py-2 px-3 text-left">口径说明</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              <tr>
-                                <td className="py-2 px-3 font-medium">T0 发货率</td>
-                                <td className="py-2 px-3 text-center">30%</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">当日支付的订单，在当日完成发货的订单占比</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 px-3 font-medium">T-1 发货率</td>
-                                <td className="py-2 px-3 text-center">50%</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">前 1 日支付的订单，在当日完成发货的订单占比</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 px-3 font-medium">T-2 发货率</td>
-                                <td className="py-2 px-3 text-center">15%</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">前 2 日支付的订单，在当日完成发货的订单占比</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 px-3 font-medium">T+2 发货 GMV 占比</td>
-                                <td className="py-2 px-3 text-center">95%</td>
-                                <td className="py-2 px-3 text-gray-500 text-xs">支付后 2 日内完成发货的订单 GMV，占当日总发货 GMV 的比例</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2">底层计算逻辑复用：T-2 以外支付的发货 GMV 占比 = 1 - T+2 发货 GMV 占比 = 5%</p>
-                      </div>
+
                       
                       {/* AI结论区域 - Step 4 */}
                       {stepCalculated[3] && (
@@ -7987,6 +8190,45 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <Settings className="w-4 h-4 text-purple-600" />
                             </div>
                             <div className="flex items-center gap-3">
+                              <button 
+                                onClick={() => {
+                                  // 一键自动调平逻辑
+                                  const targetTotal = 46714;
+                                  const currentTotal = industryData.reduce((sum, i) => sum + i.total, 0);
+                                  const diff = targetTotal - currentTotal;
+                                  
+                                  if (Math.abs(diff) > 0) {
+                                    setIndustryData(prev => {
+                                      const totalPreDiff = prev.reduce((sum, i) => sum + i.total, 0);
+                                      const multiplier = targetTotal / totalPreDiff;
+                                      
+                                      return prev.map(ind => {
+                                        const newTotal = Math.round(ind.total * multiplier);
+                                        const phaseSum = ind.preheat + ind.outbreak + ind.return;
+                                        const phaseMultiplier = newTotal / phaseSum;
+                                        
+                                        return {
+                                          ...ind,
+                                          total: newTotal,
+                                          preheat: Math.round(ind.preheat * phaseMultiplier),
+                                          outbreak: Math.round(ind.outbreak * phaseMultiplier),
+                                          return: Math.round(ind.return * phaseMultiplier),
+                                          subIndustries: ind.subIndustries.map(sub => ({
+                                            ...sub,
+                                            target: Math.round(sub.target * multiplier),
+                                            preheat: Math.round(sub.preheat * phaseMultiplier),
+                                            outbreak: Math.round(sub.outbreak * phaseMultiplier),
+                                            return: Math.round(sub.return * phaseMultiplier),
+                                          }))
+                                        };
+                                      });
+                                    });
+                                  }
+                                }}
+                                className="px-3 py-1 bg-orange-500 text-white rounded text-xs font-medium hover:bg-orange-600 transition-colors"
+                              >
+                                ⚖️ 一键自动调平
+                              </button>
                               <button className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
                                 📤 导出明细
                               </button>
@@ -7995,6 +8237,44 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </button>
                             </div>
                           </div>
+                          
+                          {/* 顶部总盘对齐进度条 */}
+                          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-gray-700">大盘总额对齐检查</span>
+                              <span className="text-xs text-gray-600">
+                                大盘总额: 46,714万 | 
+                                已分配: {industryData.reduce((sum, i) => sum + i.total, 0).toLocaleString()}万 | 
+                                <span className={
+                                  Math.abs(46714 - industryData.reduce((sum, i) => sum + i.total, 0)) === 0 
+                                    ? 'text-green-600 font-medium ml-1' 
+                                    : 'text-red-600 font-medium ml-1'
+                                }>
+                                  差值: {
+                                    (46714 - industryData.reduce((sum, i) => sum + i.total, 0)).toLocaleString()
+                                  }万
+                                </span>
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full transition-all ${
+                                  Math.abs(46714 - industryData.reduce((sum, i) => sum + i.total, 0)) === 0 
+                                    ? 'bg-green-500' 
+                                    : 'bg-orange-500'
+                                }`}
+                                style={{ 
+                                  width: `${Math.min(100, (industryData.reduce((sum, i) => sum + i.total, 0) / 46714) * 100)}%` 
+                                }}
+                              ></div>
+                            </div>
+                            {Math.abs(46714 - industryData.reduce((sum, i) => sum + i.total, 0)) !== 0 && (
+                              <p className="text-xs text-red-600 mt-2">
+                                ⚠️ 行业分配总额与大盘不一致，请点击「一键自动调平」或手动调整
+                              </p>
+                            )}
+                          </div>
+                          
                           <p className="text-xs text-gray-500 mb-3">支持一级/二级赛道层级联动筛选，AI自动完成二级拆分，父子级目标自动校验</p>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -8026,34 +8306,166 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                         </button>
                                       </td>
                                       <td className="py-2 px-3 font-medium text-blue-800">{industry.name}</td>
-                                      <td className="py-2 px-3 text-right">
+                                      <td className="py-2 px-3 text-right relative">
                                         <input
                                           type="number"
                                           value={industry.total}
                                           disabled={allStepsLocked}
+                                          onChange={(e) => {
+                                            const newVal = parseInt(e.target.value) || 0;
+                                            setIndustryData(prev => prev.map(i => 
+                                              i.id === industry.id ? {...i, total: newVal} : i
+                                            ));
+                                          }}
+                                          className={`w-24 px-2 py-1 border rounded text-right text-sm focus:outline-none focus:ring-2 ${
+                                            (Math.abs(industry.total - (industry.preheat + industry.outbreak + industry.return)) > 0 || 
+                                             (industry.subIndustries.length > 0 && Math.abs(industry.total - industry.subIndustries.reduce((sum, s) => sum + s.target, 0)) > 0))
+                                              ? 'border-red-400 focus:ring-red-400' 
+                                              : 'border-gray-300 focus:ring-blue-500'
+                                          }`}
+                                        />
+                                        {/* 校验提示 */}
+                                        {Math.abs(industry.total - (industry.preheat + industry.outbreak + industry.return)) > 0 && (
+                                          <div className="absolute top-full left-0 mt-1 bg-red-100 text-red-700 text-xs px-2 py-1 rounded z-10 whitespace-nowrap">
+                                            横向校验失败: 预热期+爆发期+返场期 = {industry.preheat + industry.outbreak + industry.return}，与全周期{industry.total}相差{industry.total - (industry.preheat + industry.outbreak + industry.return)}
+                                          </div>
+                                        )}
+                                        {industry.subIndustries.length > 0 && Math.abs(industry.total - industry.subIndustries.reduce((sum, s) => sum + s.target, 0)) > 0 && (
+                                          <div className="absolute top-full left-0 mt-6 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded z-10 whitespace-nowrap">
+                                            纵向校验失败: 子行业之和 = {industry.subIndustries.reduce((sum, s) => sum + s.target, 0)}，与父行业{industry.total}相差{industry.total - industry.subIndustries.reduce((sum, s) => sum + s.target, 0)}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="py-2 px-3 text-right">
+                                        <input
+                                          type="number"
+                                          value={industry.preheat}
+                                          disabled={allStepsLocked}
+                                          onChange={(e) => {
+                                            const newVal = parseInt(e.target.value) || 0;
+                                            setIndustryData(prev => prev.map(i => 
+                                              i.id === industry.id ? {...i, preheat: newVal} : i
+                                            ));
+                                          }}
                                           className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                       </td>
-                                      <td className="py-2 px-3 text-right">{industry.preheat.toLocaleString()}</td>
-                                      <td className="py-2 px-3 text-right">{industry.outbreak.toLocaleString()}</td>
-                                      <td className="py-2 px-3 text-right">{industry.return.toLocaleString()}</td>
+                                      <td className="py-2 px-3 text-right">
+                                        <input
+                                          type="number"
+                                          value={industry.outbreak}
+                                          disabled={allStepsLocked}
+                                          onChange={(e) => {
+                                            const newVal = parseInt(e.target.value) || 0;
+                                            setIndustryData(prev => prev.map(i => 
+                                              i.id === industry.id ? {...i, outbreak: newVal} : i
+                                            ));
+                                          }}
+                                          className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-3 text-right">
+                                        <input
+                                          type="number"
+                                          value={industry.return}
+                                          disabled={allStepsLocked}
+                                          onChange={(e) => {
+                                            const newVal = parseInt(e.target.value) || 0;
+                                            setIndustryData(prev => prev.map(i => 
+                                              i.id === industry.id ? {...i, return: newVal} : i
+                                            ));
+                                          }}
+                                          className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
                                     </tr>
                                     {/* 二级行业（展开时显示） */}
                                     {industry.expanded && industry.subIndustries.map((sub) => (
                                       <tr key={sub.id} className="bg-gray-50">
                                         <td className="py-2 px-3 pl-8"></td>
                                         <td className="py-2 px-3 text-gray-700">┗ {sub.name}</td>
-                                        <td className="py-2 px-3 text-right">
+                                        <td className="py-2 px-3 text-right relative">
                                           <input
                                             type="number"
                                             value={sub.target}
                                             disabled={allStepsLocked}
+                                            onChange={(e) => {
+                                              const newVal = parseInt(e.target.value) || 0;
+                                              setIndustryData(prev => prev.map(i => 
+                                                i.id === industry.id 
+                                                  ? {...i, subIndustries: i.subIndustries.map(s => 
+                                                      s.id === sub.id ? {...s, target: newVal} : s
+                                                    )} 
+                                                  : i
+                                              ));
+                                            }}
+                                            className={`w-24 px-2 py-1 border rounded text-right text-sm focus:outline-none focus:ring-2 ${
+                                              Math.abs(sub.target - (sub.preheat + sub.outbreak + sub.return)) > 0
+                                                ? 'border-red-400 focus:ring-red-400' 
+                                                : 'border-gray-300 focus:ring-blue-500'
+                                            }`}
+                                          />
+                                          {/* 校验提示 */}
+                                          {Math.abs(sub.target - (sub.preheat + sub.outbreak + sub.return)) > 0 && (
+                                            <div className="absolute top-full left-0 mt-1 bg-red-100 text-red-700 text-xs px-2 py-1 rounded z-10 whitespace-nowrap">
+                                              横向校验失败: 预热期+爆发期+返场期 = {sub.preheat + sub.outbreak + sub.return}，与全周期{sub.target}相差{sub.target - (sub.preheat + sub.outbreak + sub.return)}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="py-2 px-3 text-right">
+                                          <input
+                                            type="number"
+                                            value={sub.preheat}
+                                            disabled={allStepsLocked}
+                                            onChange={(e) => {
+                                              const newVal = parseInt(e.target.value) || 0;
+                                              setIndustryData(prev => prev.map(i => 
+                                                i.id === industry.id 
+                                                  ? {...i, subIndustries: i.subIndustries.map(s => 
+                                                      s.id === sub.id ? {...s, preheat: newVal} : s
+                                                    )} 
+                                                  : i
+                                              ));
+                                            }}
                                             className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                           />
                                         </td>
-                                        <td className="py-2 px-3 text-right">{sub.preheat.toLocaleString()}</td>
-                                        <td className="py-2 px-3 text-right">{sub.outbreak.toLocaleString()}</td>
-                                        <td className="py-2 px-3 text-right">{sub.return.toLocaleString()}</td>
+                                        <td className="py-2 px-3 text-right">
+                                          <input
+                                            type="number"
+                                            value={sub.outbreak}
+                                            disabled={allStepsLocked}
+                                            onChange={(e) => {
+                                              const newVal = parseInt(e.target.value) || 0;
+                                              setIndustryData(prev => prev.map(i => 
+                                                i.id === industry.id 
+                                                  ? {...i, subIndustries: i.subIndustries.map(s => 
+                                                      s.id === sub.id ? {...s, outbreak: newVal} : s
+                                                    )} 
+                                                  : i
+                                              ));
+                                            }}
+                                            className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3 text-right">
+                                          <input
+                                            type="number"
+                                            value={sub.return}
+                                            disabled={allStepsLocked}
+                                            onChange={(e) => {
+                                              const newVal = parseInt(e.target.value) || 0;
+                                              setIndustryData(prev => prev.map(i => 
+                                                i.id === industry.id 
+                                                  ? {...i, subIndustries: i.subIndustries.map(s => 
+                                                      s.id === sub.id ? {...s, return: newVal} : s
+                                                    )} 
+                                                  : i
+                                              ));
+                                            }}
+                                            className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          />
+                                        </td>
                                       </tr>
                                     ))}
                                   </React.Fragment>
@@ -8098,7 +8510,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <option>服饰鞋包</option>
                             </select>
                           </div>
-                          <p className="text-xs text-gray-500 mb-3">支持全局场次配置 + 分行业个性化增量系数配置，不同行业可设置不同的场次带动效果</p>
+                          
+                          <p className="text-xs text-gray-500 mb-3">支持全局场次配置，不同行业统一使用该增量系数</p>
+                          
+                          {/* 列表视图 */}
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead className="bg-gray-50">
@@ -8106,13 +8521,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   <th className="py-2 px-3 text-left">日期</th>
                                   <th className="py-2 px-3 text-left">场次类型</th>
                                   <th className="py-2 px-3 text-center">全局默认增量系数</th>
-                                  <th className="py-2 px-3 text-left">分行业个性化系数</th>
                                   <th className="py-2 px-3 text-left">场次描述</th>
                                   <th className="py-2 px-3 text-center">确认状态</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y">
-                                {sessionData.map((session, index) => (
+                                {detailedSessionData.map((session, index) => (
                                   <tr key={index}>
                                     <td className="py-2 px-3 font-medium">{session.date}</td>
                                     <td className="py-2 px-3 text-gray-700">{session.type}</td>
@@ -8122,10 +8536,24 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                         step="0.01"
                                         value={session.globalCoeff}
                                         disabled={allStepsLocked}
+                                        onChange={(e) => {
+                                          const newValue = parseFloat(e.target.value) || 1.0;
+                                          setDetailedSessionData(prev => prev.map(s => 
+                                            s.date === session.date
+                                              ? {
+                                                  ...s,
+                                                  globalCoeff: newValue,
+                                                  industryCoeffs: s.industryCoeffs.map(c => ({
+                                                    ...c,
+                                                    coeff: newValue
+                                                  }))
+                                                }
+                                              : s
+                                          ));
+                                        }}
                                         className="w-20 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       />
                                     </td>
-                                    <td className="py-2 px-3 text-left text-xs text-gray-600 whitespace-pre-line">{session.industryCoeff}</td>
                                     <td className="py-2 px-3 text-gray-500 text-xs">{session.desc}</td>
                                     <td className="py-2 px-3 text-center">
                                       <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">✅ 已确认</span>
@@ -8331,7 +8759,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               {/* 状态1：首次进入/未测算过/必填项未完成 */}
                               {!stepCalculated[4] && (
                                 <button
-                                  onClick={() => handleRecalculate(4)}
+                                  onClick={() => {
+                                    handleRecalculate(4);
+                                    setShowIndustryDeliveryCharts(true);
+                                  }}
                                   className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
                                 >
                                   <Zap className="w-4 h-4" />
@@ -8343,7 +8774,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               {stepCalculated[4] && (
                                 <>
                                   <button
-                                    onClick={() => handleRecalculate(4)}
+                                    onClick={() => {
+                                      handleRecalculate(4);
+                                      setShowIndustryDeliveryCharts(true);
+                                    }}
                                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
                                   >
                                     <RefreshCw className="w-4 h-4" />
@@ -8420,64 +8854,77 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                 </div>
               </div>
 
-              {/* Step2核心数据卡片区域 - 仅在step2测算完成后显示 */}
-              {stepCalculated[1] && (
+              {/* 数据卡片区域 */}
+              {stepCalculated[0] && (
                 <>
-                  {/* 第一区块：目标管控区 */}
-                  <div className="mb-8">
-                    <div className="text-sm text-gray-500 mb-3 font-medium">目标设定与评估</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* 目标 GMV */}
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="text-xs text-blue-600 mb-1">目标 GMV</div>
-                        <div className="text-2xl font-bold text-blue-900" style={{ width: '300px' }}>
-                          <input
-                            type="number"
-                            value={targetGmv}
-                            onChange={(e) => setTargetGmv(Number(e.target.value))}
-                            className="text-2xl font-bold text-blue-900 bg-transparent border-none focus:outline-none"
-                            style={{ width: '100px' }}
-                          />
-                          万
+                  {/* 第一行：目标设定与评估 */}
+                  {stepCalculated[1] && (
+                    <div className="mb-6">
+                      <div className="text-sm text-gray-500 mb-3 font-medium">目标设定与评估</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* 目标 GMV */}
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                          <div className="text-xs text-blue-600 mb-1">目标 GMV</div>
+                          <div className="text-2xl font-bold text-blue-900" style={{ width: '300px' }}>
+                            <input
+                              type="number"
+                              value={targetGmv}
+                              onChange={(e) => setTargetGmv(Number(e.target.value))}
+                              className="text-2xl font-bold text-blue-900 bg-transparent border-none focus:outline-none"
+                              style={{ width: '100px' }}
+                            />
+                            万
+                          </div>
+                          <div className="text-xs text-blue-500 mt-1">可修改，资管设定目标</div>
                         </div>
-                        <div className="text-xs text-blue-500 mt-1">可修改，资管设定目标</div>
+                        
+                        {/* 人工设定增量目标 */}
+                        {showStep2BreakdownResult && (
+                          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                            <div className="text-xs text-orange-600 mb-1">人工设定增量目标</div>
+                            <div className="text-2xl font-bold text-orange-700">
+                              +{step2BreakdownTotal.increment.toLocaleString()}万
+                            </div>
+                            <div className="text-xs text-orange-500 mt-1">同比增幅 {step2BreakdownTotal.ratio}</div>
+                          </div>
+                        )}
+                        
+                        {/* 目标差值 (Gap) */}
+                        {stepCalculated[2] && (
+                          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
+                            <div className="text-xs text-red-600 mb-1">目标差值 (Gap)</div>
+                            <div className="text-2xl font-bold text-red-700">
+                              {(targetGmv - 12000).toLocaleString()}万
+                            </div>
+                            <div className="text-xs text-red-500 mt-1">
+                              完成率 {Math.round((12000 / targetGmv) * 100)}%
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 目标达成概率 */}
+                        {stepCalculated[2] && (
+                          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div className="text-xs text-green-600 mb-1">目标达成概率</div>
+                            <div className="text-2xl font-bold text-green-700">92%</div>
+                            <div className="text-xs text-green-500 mt-1">基于当前预算和历史转化率测算</div>
+                          </div>
+                        )}
+                        
+                        {/* 整体同比增速 */}
+                        {calculationStep >= 4 && (
+                          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div className="text-xs text-green-600 mb-1">整体同比增速</div>
+                            <div className="text-2xl font-bold text-green-900">支付 +13.4% / 发货 +12.4%</div>
+                            <div className="text-xs text-green-500 mt-1">较 2024 年同量级大促</div>
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* 目标差值 (Gap) */}
-                      {stepCalculated[2] && (
-                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
-                          <div className="text-xs text-red-600 mb-1">目标差值 (Gap)</div>
-                          <div className="text-2xl font-bold text-red-700">
-                            {(targetGmv - 12000).toLocaleString()}万
-                          </div>
-                          <div className="text-xs text-red-500 mt-1">
-                            完成率 {Math.round((12000 / targetGmv) * 100)}%
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* 目标达成概率 */}
-                      {stepCalculated[2] && (
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                          <div className="text-xs text-green-600 mb-1">目标达成概率</div>
-                          <div className="text-2xl font-bold text-green-700">92%</div>
-                          <div className="text-xs text-green-500 mt-1">基于当前预算和历史转化率测算</div>
-                        </div>
-                      )}
-                      
-                      {/* 整体同比增速 */}
-                      {calculationStep >= 4 && (
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                          <div className="text-xs text-green-600 mb-1">整体同比增速</div>
-                          <div className="text-2xl font-bold text-green-900">支付 +13.4% / 发货 +12.4%</div>
-                          <div className="text-xs text-green-500 mt-1">较 2024 年同量级大促</div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                  
-                  {/* 第二区块：系统预测区 */}
-                  <div>
+                  )}
+
+                  {/* 第二行：系统预测 */}
+                  <div className="mb-6">
                     <div className="text-sm text-gray-500 mb-3 font-medium">系统预测</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* 自然水位 GMV */}
@@ -8508,154 +8955,335 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           </div>
                         </div>
                       )}
-                      
-                      {/* 全周期结算 GMV（含结算率） */}
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <div className="text-xs text-gray-500 mb-1">全周期结算 GMV</div>
-                        <div className="text-2xl font-bold text-gray-800">
-                          {Math.round(targetGmv * (settlementRate / 100)).toLocaleString()}万
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          结算率 {settlementRate}% · 基于目标支付 GMV 测算
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </>
               )}
 
               {/* 图表展示区域 - 根据步骤联动 */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                    {calculationStep === 0 && '大盘GMV分日预测·自然水位'}
-                    {calculationStep === 1 && !stepCalculated[1] && '大盘GMV分日预测·自然水位'}
-                    {calculationStep === 1 && stepCalculated[1] && '大盘GMV分日预测·目标设定'}
-                    {calculationStep === 2 && (showBudgetChart ? '大盘GMV分日预测·含预算' : '大盘GMV分日预测·目标设定')}
-                    {calculationStep >= 3 && '大盘GMV分日预测·完整视图'}
-                    {/* 业务说明tooltip */}
-                    {calculationStep === 1 && stepCalculated[1] && (
-                      <div className="relative group">
-                        <div className="cursor-help text-gray-400 hover:text-gray-600">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                          按全周期增幅等比放大的参考线，精准分日目标将在步骤3中结合大促节奏进行规划
-                        </div>
-                      </div>
-                    )}
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    {/* 只在测算后显示自然水位支付GMV图例 */}
-                    {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
-                      <span className="flex items-center gap-1 text-xs text-blue-600"><span className="w-3 h-0.5 bg-blue-500 inline-block"></span> 自然水位支付GMV</span>
-                    )}
-                    <span className="flex items-center gap-1 text-xs text-purple-600"><span className="w-3 h-0.5 bg-purple-500 inline-block" style={{borderTop: '2px dashed #8B5CF6'}}></span> 历史大促参考水位</span>
-                    {/* 步骤2测算完成后显示等比加压目标参考线 */}
-                    {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
-                      <span className="flex items-center gap-1 text-xs text-orange-500">
-                        <span className="w-3 h-0.5 bg-orange-500 inline-block" style={{borderTop: '2px dashed #F97316'}}></span> 
-                        等比加压目标参考线
+              <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
+                {/* 重构的自然水位分日预测图表 - 在所有步骤中都显示（只要步骤0已测算） */}
+                {stepCalculated[0] ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        大盘支付GMV自然水位分日预测
+                      </h3>
+                      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showHistoricalLines}
+                          onChange={(e) => setShowHistoricalLines(e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        显示历年还原水位明细线
+                      </label>
+                    </div>
+                    
+                    {/* 图例 */}
+                    <div className="flex flex-wrap gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-gray-700">
+                        <span className="w-4 h-0.5 bg-blue-600 inline-block"></span> 
+                        本次大促自然水位预测线
                       </span>
-                    )}
-                    {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-green-600"><span className="w-3 h-0.5 bg-green-500 inline-block"></span> 含预算预测支付GMV</span>}
-                    {stepCalculated[2] && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-teal-600"><span className="w-3 h-0.5 bg-teal-500 inline-block" style={{borderTop: '2px dashed #14B8A6'}}></span> 含预算预测结算GMV</span>}
-                    {calculationStep >= 3 && <span className="flex items-center gap-1 text-xs text-orange-500"><span className="w-3 h-0.5 bg-orange-500 inline-block"></span> 含预算预测发货GMV</span>}
+                      {showHistoricalLines && step1HistoricalReferences.filter(r => r.enabled).map((ref, idx) => {
+                        const colors = ['#9CA3AF', '#D1D5DB', '#6B7280'];
+                        return (
+                          <span key={ref.id} className="flex items-center gap-1.5 text-xs text-gray-600">
+                            <span className="w-4 h-0.5 inline-block" style={{borderTop: '2px dashed ' + colors[idx % colors.length]}}></span> 
+                            {ref.name}还原水位
+                          </span>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart 
+                          data={step1MockData.predictData.map((d, i) => {
+                            const dataPoint: any = { date: d.date, predict: d.value };
+                            if (showHistoricalLines) {
+                              step1HistoricalReferences.filter(r => r.enabled).forEach(ref => {
+                                const histData = ref.chartData[i];
+                                if (histData) {
+                                  dataPoint[`hist_${ref.id}`] = histData.value;
+                                }
+                              });
+                            }
+                            return dataPoint;
+                          })}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} unit="万" />
+                          <Tooltip
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                const predictData = payload.find(p => p.name === '预测自然水位');
+                                const historicalData = payload.filter(p => p.name !== '预测自然水位');
+                                
+                                return (
+                                  <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                                    <p className="text-sm font-semibold text-gray-900 mb-2">{label}</p>
+                                    {predictData && (
+                                      <p className="text-sm text-gray-700 mb-1">
+                                        预测自然水位: <span className="font-semibold text-blue-600">{predictData.value.toLocaleString()}万</span>
+                                      </p>
+                                    )}
+                                    {historicalData.length > 0 && (
+                                      <>
+                                        <p className="text-xs text-gray-500 mt-2 mb-1">【参照系】</p>
+                                        {historicalData.map((p, idx) => {
+                                          const ref = step1HistoricalReferences.find(r => `hist_${r.id}` === p.dataKey);
+                                          const histDataForDate = ref?.chartData.find(d => d.date === label);
+                                          return (
+                                            <p key={idx} className="text-sm text-gray-600">
+                                              {ref?.name}({histDataForDate?.originalDate || label}) 还原水位: <span className="font-medium">{p.value.toLocaleString()}万</span>
+                                            </p>
+                                          );
+                                        })}
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="predict" 
+                            stroke="#2563EB" 
+                            strokeWidth={3} 
+                            dot={{ r: 4, fill: '#2563EB' }} 
+                            name="预测自然水位"
+                          />
+                          {showHistoricalLines && step1HistoricalReferences.filter(r => r.enabled).map((ref, idx) => {
+                            const colors = ['#9CA3AF', '#D1D5DB', '#6B7280'];
+                            return (
+                              <Line 
+                                key={ref.id}
+                                type="monotone" 
+                                dataKey={`hist_${ref.id}`} 
+                                stroke={colors[idx % colors.length]} 
+                                strokeWidth={2} 
+                                strokeDasharray="5 5"
+                                dot={{ r: 3, fill: colors[idx % colors.length] }} 
+                                name={ref.name}
+                              />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : calculationStep === 0 && !stepCalculated[0] ? (
+                  /* 步骤0未确认时显示空状态 */
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <div className="text-4xl mb-2">📊</div>
+                    <p className="text-sm">请点击「确认信息，开始测算」查看图表</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* 其他步骤保持原有图表 */}
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        {calculationStep === 1 && !stepCalculated[1] && '大盘GMV分日预测·自然水位'}
+                        {calculationStep === 1 && stepCalculated[1] && '大盘GMV分日预测·目标设定'}
+                        {calculationStep === 2 && (showBudgetChart ? '大盘GMV分日预测·含预算' : '大盘GMV分日预测·目标设定')}
+                        {calculationStep >= 3 && '大盘GMV分日预测·完整视图'}
+                        {/* 业务说明tooltip */}
+                        {calculationStep === 1 && stepCalculated[1] && (
+                          <div className="relative group">
+                            <div className="cursor-help text-gray-400 hover:text-gray-600">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                              按全周期增幅等比放大的参考线，精准分日目标将在步骤3中结合大促节奏进行规划
+                            </div>
+                          </div>
+                        )}
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        {/* 只在测算后显示自然水位支付GMV图例 */}
+                        {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
+                          <span className="flex items-center gap-1 text-xs text-blue-600"><span className="w-3 h-0.5 bg-blue-500 inline-block"></span> 自然水位支付GMV</span>
+                        )}
+                        <span className="flex items-center gap-1 text-xs text-purple-600"><span className="w-3 h-0.5 bg-purple-500 inline-block" style={{borderTop: '2px dashed #8B5CF6'}}></span> 历史大促参考水位</span>
+                        {/* 步骤2测算完成后显示等比加压目标参考线 */}
+                        {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
+                          <span className="flex items-center gap-1 text-xs text-orange-500">
+                            <span className="w-3 h-0.5 bg-orange-500 inline-block" style={{borderTop: '2px dashed #F97316'}}></span> 
+                            等比加压目标参考线
+                          </span>
+                        )}
+                        {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-green-600"><span className="w-3 h-0.5 bg-green-500 inline-block"></span> 含预算预测支付GMV</span>}
+                        {stepCalculated[2] && dailyGmvTargets.length > 0 && <span className="flex items-center gap-1 text-xs text-teal-600"><span className="w-3 h-0.5 bg-teal-500 inline-block" style={{borderTop: '2px dashed #14B8A6'}}></span> 含预算预测结算GMV</span>}
+                        {calculationStep >= 3 && <span className="flex items-center gap-1 text-xs text-orange-500"><span className="w-3 h-0.5 bg-orange-500 inline-block"></span> 含预算预测发货GMV</span>}
+                      </div>
+                    </div>
+                    <div className="h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={
+                          (calculationStep === 0 && !stepCalculated[0]) || (calculationStep === 1 && !stepCalculated[1]) ?
+                            // Step1未测算时或Step2刚进入未测算时，只显示历史参考数据
+                            currentConfig.waterLevelChart.map(w => ({ day: w.day, topDown: w.topDown })) :
+                          calculationStep === 0 && naturalWaterLevelData.length > 0 ? 
+                            naturalWaterLevelData.map((d, i) => ({
+                              day: d.date.split('-').slice(1).join('/'),
+                              natural: d.value,
+                              topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
+                            })) :
+                          calculationStep === 1 && stepCalculated[1] && fullCycleTargets.length > 0 && naturalWaterLevelData.length > 0 ?
+                            // Step2测算完成：显示自然水位 + 等比加压目标参考线
+                            naturalWaterLevelData.map((d, i) => {
+                              const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
+                              return {
+                                day: d.date.split('-').slice(1).join('/'),
+                                natural: d.value,
+                                topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
+                                amplified: Math.round(d.value * (1 + growthRate)),
+                              };
+                            }) :
+                          calculationStep === 2 && !showBudgetChart ?
+                            // Step3初始状态：显示自然水位 + 等比加压目标参考线
+                            naturalWaterLevelData.map((d, i) => {
+                              const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
+                              return {
+                                day: d.date.split('-').slice(1).join('/'),
+                                natural: d.value,
+                                topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
+                                amplified: Math.round(d.value * (1 + growthRate)),
+                              };
+                            }) :
+                          (calculationStep === 2 && showBudgetChart || calculationStep >= 2) && dailyGmvTargets.length > 0 ?
+                            // Step3点击按钮后或Step3+，显示完整数据 + 等比加压目标参考线
+                            dailyGmvTargets.map((d, i) => {
+                              const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
+                              const baseValue = naturalWaterLevelData[i]?.value || Math.round(d.manualTarget * 0.77);
+                              // 结算率根据日期类型调整：工作日约85%，周末约84%，大促日略高约88%
+                              const isBigDay = i === 3; // 假设第4天是大促日
+                              const isWeekend = i === 0 || i === 5; // 假设第1和第6天是周末
+                              const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
+                              return {
+                                day: d.date.split('-').slice(1).join('/'),
+                                natural: Math.round(d.manualTarget * 0.77),
+                                withBudget: d.manualTarget,
+                                withBudgetShip: deliveryGmvData.find(dd => dd.date === d.date)?.value || Math.round(d.manualTarget * 0.71),
+                                settlement: Math.round(d.manualTarget * settlementRate),
+                                settlementRate: settlementRate,
+                                topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
+                                amplified: Math.round(baseValue * (1 + growthRate)),
+                              };
+                            }) :
+                            [
+                              ...currentConfig.waterLevelChart.map(w => ({ day: w.day, natural: w.natural, topDown: w.topDown, bottomUp: w.bottomUp })),
+                            ]
+                        }>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} unit="万" />
+                          <Tooltip />
+                          {/* 只在测算后显示自然水位支付GMV线 */}
+                          {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
+                            <Line type="monotone" dataKey="natural" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="自然水位支付GMV" />
+                          )}
+                          <Line type="monotone" dataKey="topDown" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="历史大促参考水位" />
+                          {/* 步骤2测算完成后显示等比加压目标参考线 */}
+                          {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
+                            <Line 
+                              type="monotone" 
+                              dataKey="amplified" 
+                              stroke="#F97316" 
+                              strokeWidth={2} 
+                              strokeDasharray="5 5" 
+                              dot={{ r: 3 }} 
+                              name="等比加压目标参考线" 
+                            />
+                          )}
+                          {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="withBudget" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="含预算预测支付GMV" />}
+                          {stepCalculated[3] && <Line type="monotone" dataKey="withBudgetShip" stroke="#F97316" strokeWidth={2} dot={{ r: 3 }} name="含预算预测发货GMV" />}
+                          {stepCalculated[2] && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="settlement" stroke="#14B8A6" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} name="含预算预测结算GMV" />}
+                          <Legend />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Step2目标拆分结果 - 堆叠柱状图（一旦生成在Step2-5中持续显示） */}
+              {showStep2BreakdownResult && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                      目标拆分堆叠柱状图
+                    </h3>
+                  </div>
+                  
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={(() => {
+                          // 按阶段聚合数据
+                          const phaseData: { [key: string]: { natural: number; increment: number; phase: string } } = {};
+                          
+                          step2BreakdownDailyData.forEach(item => {
+                            const phaseName = item.phase.replace('(BigDay)', '').trim();
+                            if (!phaseData[phaseName]) {
+                              phaseData[phaseName] = { natural: 0, increment: 0, phase: phaseName };
+                            }
+                            phaseData[phaseName].natural += item.natural;
+                            phaseData[phaseName].increment += item.increment;
+                          });
+                          
+                          return Object.values(phaseData);
+                        })()}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="phase" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} unit="万" />
+                        <Tooltip
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              const natural = payload.find(p => p.dataKey === 'natural')?.value || 0;
+                              const increment = payload.find(p => p.dataKey === 'increment')?.value || 0;
+                              const total = (natural as number) + (increment as number);
+                              
+                              return (
+                                <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                                  <p className="text-sm font-semibold text-gray-900 mb-2">{label}</p>
+                                  <p className="text-xs text-gray-700">
+                                    自然水位基线：<span className="font-semibold text-blue-600">{(natural as number).toLocaleString()}万</span>
+                                  </p>
+                                  <p className="text-xs text-gray-700">
+                                    分配增量：<span className="font-semibold text-orange-600">{(increment as number).toLocaleString()}万</span>
+                                  </p>
+                                  <p className="text-xs text-gray-700">
+                                    阶段目标GMV：<span className="font-semibold text-gray-900">{total.toLocaleString()}万</span>
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="natural" stackId="a" fill="#3B82F6" name="自然水位基线" />
+                        <Bar dataKey="increment" stackId="a" fill="#F97316" name="分配增量" />
+                        <Legend />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={
-                      (calculationStep === 0 && !stepCalculated[0]) || (calculationStep === 1 && !stepCalculated[1]) ?
-                        // Step1未测算时或Step2刚进入未测算时，只显示历史参考数据
-                        currentConfig.waterLevelChart.map(w => ({ day: w.day, topDown: w.topDown })) :
-                      calculationStep === 0 && naturalWaterLevelData.length > 0 ? 
-                        naturalWaterLevelData.map((d, i) => ({
-                          day: d.date.split('-').slice(1).join('/'),
-                          natural: d.value,
-                          topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
-                        })) :
-                      calculationStep === 1 && stepCalculated[1] && fullCycleTargets.length > 0 && naturalWaterLevelData.length > 0 ?
-                        // Step2测算完成：显示自然水位 + 等比加压目标参考线
-                        naturalWaterLevelData.map((d, i) => {
-                          const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
-                          return {
-                            day: d.date.split('-').slice(1).join('/'),
-                            natural: d.value,
-                            topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
-                            amplified: Math.round(d.value * (1 + growthRate)),
-                          };
-                        }) :
-                      calculationStep === 2 && !showBudgetChart ?
-                        // Step3初始状态：显示自然水位 + 等比加压目标参考线
-                        naturalWaterLevelData.map((d, i) => {
-                          const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
-                          return {
-                            day: d.date.split('-').slice(1).join('/'),
-                            natural: d.value,
-                            topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
-                            amplified: Math.round(d.value * (1 + growthRate)),
-                          };
-                        }) :
-                      (calculationStep === 2 && showBudgetChart || calculationStep >= 2) && dailyGmvTargets.length > 0 ?
-                        // Step3点击按钮后或Step3+，显示完整数据 + 等比加压目标参考线
-                        dailyGmvTargets.map((d, i) => {
-                          const growthRate = parseFloat(step2GrowthPercentage || '0') / 100;
-                          const baseValue = naturalWaterLevelData[i]?.value || Math.round(d.manualTarget * 0.77);
-                          // 结算率根据日期类型调整：工作日约85%，周末约84%，大促日略高约88%
-                          const isBigDay = i === 3; // 假设第4天是大促日
-                          const isWeekend = i === 0 || i === 5; // 假设第1和第6天是周末
-                          const settlementRate = isBigDay ? 0.88 : isWeekend ? 0.84 : 0.85;
-                          return {
-                            day: d.date.split('-').slice(1).join('/'),
-                            natural: Math.round(d.manualTarget * 0.77),
-                            withBudget: d.manualTarget,
-                            withBudgetShip: deliveryGmvData.find(dd => dd.date === d.date)?.value || Math.round(d.manualTarget * 0.71),
-                            settlement: Math.round(d.manualTarget * settlementRate),
-                            settlementRate: settlementRate,
-                            topDown: currentConfig.waterLevelChart[i]?.topDown || 0,
-                            amplified: Math.round(baseValue * (1 + growthRate)),
-                          };
-                        }) :
-                        [
-                          ...currentConfig.waterLevelChart.map(w => ({ day: w.day, natural: w.natural, topDown: w.topDown, bottomUp: w.bottomUp })),
-                        ]
-                    }>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} unit="万" />
-                      <Tooltip />
-                      {/* 只在测算后显示自然水位支付GMV线 */}
-                      {((calculationStep === 1 && stepCalculated[1]) || calculationStep > 1 || (calculationStep === 0 && stepCalculated[0])) && (
-                        <Line type="monotone" dataKey="natural" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="自然水位支付GMV" />
-                      )}
-                      <Line type="monotone" dataKey="topDown" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="历史大促参考水位" />
-                      {/* 步骤2测算完成后显示等比加压目标参考线 */}
-                      {((calculationStep === 1 && stepCalculated[1]) || calculationStep >= 2) && (
-                        <Line 
-                          type="monotone" 
-                          dataKey="amplified" 
-                          stroke="#F97316" 
-                          strokeWidth={2} 
-                          strokeDasharray="5 5" 
-                          dot={{ r: 3 }} 
-                          name="等比加压目标参考线" 
-                        />
-                      )}
-                      {((calculationStep === 2 && showBudgetChart) || calculationStep >= 3) && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="withBudget" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="含预算预测支付GMV" />}
-                      {stepCalculated[3] && <Line type="monotone" dataKey="withBudgetShip" stroke="#F97316" strokeWidth={2} dot={{ r: 3 }} name="含预算预测发货GMV" />}
-                      {stepCalculated[2] && dailyGmvTargets.length > 0 && <Line type="monotone" dataKey="settlement" stroke="#14B8A6" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} name="含预算预测结算GMV" />}
-                      <Legend />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+              )}
 
-              {/* Step5 测算结果输出 - 联动下钻仪表盘（仅在步骤4之后显示） */}
-              {stepCalculated[3] && (
+              {/* Step5 测算结果输出 - 联动下钻仪表盘（仅在步骤4之后且Step5测算完成后显示） */}
+              {stepCalculated[3] && showIndustryDeliveryCharts && (
                 <div className="mt-6">
                   {/* 左右分栏布局 - 主图表区 + 结构下钻面板 */}
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -8675,6 +9303,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 onChange={(e) => {
                                   setSelectedDashboardIndustry(e.target.value);
                                   setSelectedPoint({}); // 切换行业时重置选中点
+                                  setIsStackedView(false); // 切换行业时重置堆叠视图
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs transition-colors border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
@@ -8685,61 +9314,153 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               </select>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500">💡 点击图中数据点可查看详情</p>
+                          <div className="flex items-center gap-2">
+                            {/* 堆叠视图切换按钮 - 仅在大盘视角显示 */}
+                            {selectedDashboardIndustry === 'total' && (
+                              <button
+                                onClick={() => setIsStackedView(!isStackedView)}
+                                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                                  isStackedView 
+                                    ? 'bg-orange-100 text-orange-700' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                              >
+                                {isStackedView ? '📊 堆叠视图' : '📈 普通视图'}
+                              </button>
+                            )}
+                            <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
+                          </div>
                         </div>
                         <div className="h-52">
                           <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={dashboardMockData[selectedDashboardIndustry]?.xAxis.map(date => {
-                              const dataPoint: any = { day: date };
-                              dashboardMockData[selectedDashboardIndustry].series.forEach(series => {
-                                const point = series.trendData.find(d => d.date === date);
-                                dataPoint[series.name] = point ? point.value : null;
-                              });
-                              return dataPoint;
-                            }) || []}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                              <YAxis tick={{ fontSize: 11 }} unit="万" />
-                              <Tooltip
-                                content={({ active, payload, label }) => {
-                                  if (active && payload && payload.length) {
-                                    return (
-                                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
-                                        <p className="font-bold text-gray-800 mb-2">{label}</p>
-                                        {payload.map((entry: any, index: number) => (
-                                          <p key={index} className="flex items-center gap-2">
-                                            <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
-                                            <span className="text-gray-600">{entry.name}：</span>
-                                            <span className="font-bold text-gray-900">{entry.value}</span>
-                                            <span className="text-gray-500">万</span>
-                                          </p>
-                                        ))}
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                              />
-                              <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
-                              {dashboardMockData[selectedDashboardIndustry]?.series.map((series) => (
-                                <Line 
-                                  key={series.name}
-                                  type="monotone" 
-                                  dataKey={series.name} 
-                                  stroke={series.color}
-                                  strokeWidth={series.isMain ? 3 : 1.5}
-                                  strokeDasharray={series.isMain ? undefined : '5 5'}
-                                  dot={{ 
-                                    r: series.isMain ? 4 : 2, 
-                                    strokeWidth: series.isMain ? 2 : 1,
-                                    fill: '#fff',
-                                    cursor: 'pointer'
-                                  }} 
-                                  activeDot={{ r: 6, strokeWidth: 3 }}
-                                  name={series.name}
+                            {selectedDashboardIndustry === 'total' && isStackedView ? (
+                              // 堆叠面积图模式
+                              <AreaChart data={dashboardMockData['total']?.xAxis.map(date => {
+                                const dataPoint: any = { day: date };
+                                dashboardMockData['total'].series.forEach(series => {
+                                  const point = series.trendData.find(d => d.date === date);
+                                  dataPoint[series.name] = point ? point.value : null;
+                                });
+                                return dataPoint;
+                              }) || []}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                                <YAxis tick={{ fontSize: 11 }} unit="万" />
+                                <Tooltip
+                                  content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      let total = 0;
+                                      payload.forEach((p: any) => { total += p.value; });
+                                      return (
+                                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
+                                          <p className="font-bold text-gray-800 mb-2">{label} - 总计: {total}万</p>
+                                          {payload.map((entry: any, index: number) => (
+                                            <p key={index} className="flex items-center gap-2">
+                                              <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
+                                              <span className="text-gray-600">{entry.name}：</span>
+                                              <span className="font-bold text-gray-900">{entry.value}</span>
+                                              <span className="text-gray-500">万</span>
+                                            </p>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
                                 />
-                              ))}
-                            </ComposedChart>
+                                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                                {dashboardMockData['total'].series.map((series) => (
+                                  <Area
+                                    key={series.name}
+                                    type="monotone"
+                                    dataKey={series.name}
+                                    stackId="total"
+                                    stroke={series.color}
+                                    fill={series.color}
+                                    fillOpacity={0.6}
+                                    strokeWidth={series.isMain ? 2 : 1}
+                                    name={series.name}
+                                  />
+                                ))}
+                              </AreaChart>
+                            ) : (
+                              // 普通视图模式
+                              <ComposedChart 
+                                data={dashboardMockData[selectedDashboardIndustry]?.xAxis.map(date => {
+                                  const dataPoint: any = { day: date };
+                                  dashboardMockData[selectedDashboardIndustry].series.forEach(series => {
+                                    const point = series.trendData.find(d => d.date === date);
+                                    dataPoint[series.name] = point ? point.value : null;
+                                  });
+                                  return dataPoint;
+                                }) || []}
+                                onMouseEnter={(data) => {
+                                  if (data && data.day) {
+                                    setHoveredDate(data.day);
+                                  }
+                                }}
+                                onMouseLeave={() => setHoveredDate(null)}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                                <YAxis tick={{ fontSize: 11 }} unit="万" />
+                                <Tooltip
+                                  content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      return (
+                                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
+                                          <p className="font-bold text-gray-800 mb-2">{label}</p>
+                                          {payload.map((entry: any, index: number) => (
+                                            <p key={index} className="flex items-center gap-2">
+                                              <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
+                                              <span className="text-gray-600">{entry.name}：</span>
+                                              <span className="font-bold text-gray-900">{entry.value}</span>
+                                              <span className="text-gray-500">万</span>
+                                            </p>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
+                                {/* 大盘视角：大盘总计显示为面积图 */}
+                                {selectedDashboardIndustry === 'total' && (
+                                  <Area
+                                    type="monotone"
+                                    dataKey="大盘总计"
+                                    stroke="#F97316"
+                                    fill="#FEF3C7"
+                                    fillOpacity={0.5}
+                                    strokeWidth={3}
+                                    name="大盘总计"
+                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                    activeDot={{ r: 6, strokeWidth: 3 }}
+                                  />
+                                )}
+                                {/* 所有系列显示为折线 */}
+                                {dashboardMockData[selectedDashboardIndustry]?.series.map((series) => (
+                                  <Line 
+                                    key={series.name}
+                                    type="monotone" 
+                                    dataKey={series.name} 
+                                    stroke={series.color}
+                                    strokeWidth={series.isMain ? 3 : 1.5}
+                                    strokeDasharray={series.isReference ? '5 5' : (series.isMain ? undefined : '5 5')}
+                                    dot={{ 
+                                      r: series.isMain ? 4 : (series.isReference ? 0 : 2), 
+                                      strokeWidth: series.isMain ? 2 : 1,
+                                      fill: '#fff',
+                                      cursor: 'pointer'
+                                    }} 
+                                    activeDot={{ r: 6, strokeWidth: 3 }}
+                                    name={series.name}
+                                    opacity={series.isReference ? 0.4 : 1}
+                                  />
+                                ))}
+                              </ComposedChart>
+                            )}
                           </ResponsiveContainer>
                         </div>
                       </div>
@@ -8817,8 +9538,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                 </div>
               )}
 
-              {/* Step5 测算结果输出 - 明细表格区（仅在步骤4之后显示） */}
-              {calculationStep >= 4 && (
+              {/* Step5 测算结果输出 - 明细表格区（仅在步骤4之后且Step5测算完成后显示） */}
+              {calculationStep >= 4 && showIndustryDeliveryCharts && (
                 <div className="mt-6">
                   {/* 表格区域Tab切换 */}
                   <div className="flex items-center justify-between mb-4">
@@ -8858,6 +9579,18 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultTableTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                       >
                         场次效果
+                      </button>
+                      <button
+                        onClick={() => setResultTableTab('dailyDetail')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultTableTab === 'dailyDetail' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        行业分日预测明细
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors">
+                        <Download className="w-3 h-3" />
+                        📥 导出明细数据
                       </button>
                     </div>
                   </div>
@@ -9374,6 +10107,363 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </>
                     )}
+
+                    {/* 行业分日预测明细表格 */}
+                    {resultTableTab === 'dailyDetail' && (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-bold text-sm text-gray-800">行业分日预测明细</h4>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 text-gray-600 font-medium">
+                              <tr>
+                                <th className="text-left py-3 px-4">日期</th>
+                                <th className="text-left py-3 px-4">所属阶段</th>
+                                <th className="text-left py-3 px-4">行业/赛道</th>
+                                <th className="text-right py-3 px-4">大盘基准水位</th>
+                                <th className="text-right py-3 px-4">AI预测发货GMV</th>
+                                <th className="text-right py-3 px-4">同比增速</th>
+                                <th className="text-left py-3 px-4">带动因素</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {/* 06/15 */}
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4 font-medium text-gray-900">06/15</td>
+                                <td className="py-3 px-4 text-gray-600">预热期</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <ChevronRight className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">3C数码</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">1,500万</td>
+                                <td className="py-3 px-4 text-right font-bold text-gray-900">410万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+8.5%</td>
+                                <td className="py-3 px-4">
+                                  <span 
+                                    className="text-xs text-blue-600 border-b border-blue-300 cursor-pointer hover:text-blue-800 flex items-center gap-1"
+                                    onClick={() => setShowAiDetail(true)}
+                                  >
+                                    自然增长 ✨
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4 pl-6">
+                                  <span className="text-gray-600">手机</span>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">960万</td>
+                                <td className="py-3 px-4 text-right font-bold text-gray-900">260万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+9.2%</td>
+                                <td className="py-3 px-4"></td>
+                              </tr>
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4 pl-6">
+                                  <span className="text-gray-600">电脑整机</span>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">330万</td>
+                                <td className="py-3 px-4 text-right font-bold text-gray-900">110万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+7.8%</td>
+                                <td className="py-3 px-4"></td>
+                              </tr>
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4 font-medium text-gray-900">06/15</td>
+                                <td className="py-3 px-4 text-gray-600">预热期</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <ChevronRight className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">家电</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">1,500万</td>
+                                <td className="py-3 px-4 text-right font-bold text-gray-900">320万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+6.2%</td>
+                                <td className="py-3 px-4">
+                                  <span 
+                                    className="text-xs text-blue-600 border-b border-blue-300 cursor-pointer hover:text-blue-800 flex items-center gap-1"
+                                    onClick={() => setShowAiDetail(true)}
+                                  >
+                                    自然增长 ✨
+                                  </span>
+                                </td>
+                              </tr>
+                              {/* 06/18 - BigDay */}
+                              <tr className="hover:bg-gray-50 bg-orange-50">
+                                <td className="py-3 px-4 font-bold text-gray-900">06/18</td>
+                                <td className="py-3 px-4 text-red-600 font-medium">爆发期</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <ChevronRight className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">3C数码</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">5,500万</td>
+                                <td className="py-3 px-4 text-right font-bold text-red-600">1,440万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+38.5%</td>
+                                <td className="py-3 px-4">
+                                  <span 
+                                    className="text-xs text-blue-600 border-b border-blue-300 cursor-pointer hover:text-blue-800 flex items-center gap-1"
+                                    onClick={() => setShowAiDetail(true)}
+                                  >
+                                    全品类大场带动 ✨
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="hover:bg-gray-50 bg-orange-50">
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4 pl-6">
+                                  <span className="text-gray-600">手机</span>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">3,520万</td>
+                                <td className="py-3 px-4 text-right font-bold text-red-600">900万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+42.1%</td>
+                                <td className="py-3 px-4"></td>
+                              </tr>
+                              <tr className="hover:bg-gray-50 bg-orange-50">
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4"></td>
+                                <td className="py-3 px-4 pl-6">
+                                  <span className="text-gray-600">电脑整机</span>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">1,210万</td>
+                                <td className="py-3 px-4 text-right font-bold text-red-600">400万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+35.8%</td>
+                                <td className="py-3 px-4"></td>
+                              </tr>
+                              {/* 更多数据... */}
+                              <tr className="hover:bg-gray-50">
+                                <td className="py-3 px-4 font-medium text-gray-900">06/19</td>
+                                <td className="py-3 px-4 text-gray-600">返场期</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <ChevronRight className="w-3 h-3 text-gray-400" />
+                                    <span className="font-medium">服饰</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right text-gray-600">2,845万</td>
+                                <td className="py-3 px-4 text-right font-bold text-gray-900">460万</td>
+                                <td className="py-3 px-4 text-right text-green-600">+12.3%</td>
+                                <td className="py-3 px-4">
+                                  <span 
+                                    className="text-xs text-blue-600 border-b border-blue-300 cursor-pointer hover:text-blue-800 flex items-center gap-1"
+                                    onClick={() => setShowAiDetail(true)}
+                                  >
+                                    返场日带动 ✨
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* AI解释弹窗 */}
+              {showAiDetail && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-lg mx-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900">AI测算公式拆解</h3>
+                      <button 
+                        onClick={() => setShowAiDetail(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-3">
+                      <p className="font-medium text-gray-900">📊 测算公式：</p>
+                      <div className="bg-gray-50 p-3 rounded-lg font-mono text-xs">
+                        <p>预测发货GMV = 大盘基准水位 × 行业渗透率 × 活动带动系数</p>
+                        <p className="mt-2">= 5,500万 × 0.26 × 1.3 = 1,440万</p>
+                      </div>
+                      <p className="font-medium text-gray-900">🔍 参数说明：</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li><span className="font-medium">大盘基准水位</span>：基于历史同期数据和自然增长预测的当日整体流量规模</li>
+                        <li><span className="font-medium">行业渗透率</span>：3C数码行业在大盘中的占比（约26%）</li>
+                        <li><span className="font-medium">活动带动系数</span>：全品类大场活动带来的增量提升（1.3倍）</li>
+                      </ul>
+                      <p className="font-medium text-gray-900">💡 置信度评估：</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500 w-4/5 rounded-full"></div>
+                        </div>
+                        <span className="text-xs font-medium text-green-600">85%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-6">
+                      <button
+                        onClick={() => setShowAiDetail(false)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        关闭
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 分享弹窗 */}
+              {showShareModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl max-w-2xl mx-4 w-full max-h-[90vh] flex flex-col">
+                    {/* 弹窗头部 */}
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900">分享预算分析报告</h3>
+                      <button 
+                        onClick={() => setShowShareModal(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* 弹窗内容 */}
+                    <div className="flex-1 overflow-y-auto p-6">
+                      {/* 飞书风格搜索框 */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">搜索成员或部门</label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="搜索姓名、邮箱或部门..."
+                            value={shareSearchQuery}
+                            onChange={(e) => setShareSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          />
+                        </div>
+                        {shareSearchQuery && (
+                          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                            ✨ 快捷添加：输入关键词搜索后点击成员即可添加
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 成员权限列表 */}
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-sm font-medium text-gray-700">成员权限设置</label>
+                          <button className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            添加更多
+                          </button>
+                        </div>
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="text-left py-3 px-4 font-medium text-gray-700 w-1/3">角色</th>
+                                <th className="text-left py-3 px-4 font-medium text-gray-700 w-1/3">权限范围</th>
+                                <th className="text-left py-3 px-4 font-medium text-gray-700 w-1/3">操作权限</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {sharePermissions.map((item) => (
+                                <tr key={item.id} className="hover:bg-gray-50">
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                        <Users className="w-4 h-4 text-gray-600" />
+                                      </div>
+                                      <div>
+                                        <div className="font-medium text-gray-900">{item.role}</div>
+                                        <div className="text-xs text-gray-500">{item.members.join('、')}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {item.scopeType === 'global' ? (
+                                      <span className="text-gray-500 text-sm">
+                                        {item.scope}
+                                      </span>
+                                    ) : (
+                                      <div className="flex items-center gap-1.5">
+                                        <Shield className="w-4 h-4 text-orange-500" />
+                                        <span className="text-orange-700 text-sm font-medium">
+                                          {item.scope}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <select
+                                      value={item.permission}
+                                      onChange={(e) => {
+                                        setSharePermissions(prev => prev.map(p => 
+                                          p.id === item.id 
+                                            ? {...p, permission: e.target.value} 
+                                            : p
+                                        ));
+                                      }}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                      {item.scopeType === 'global' ? (
+                                        <>
+                                          <option value="edit">可编辑</option>
+                                          <option value="view">仅查看</option>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <option value="limited">受限编辑</option>
+                                          <option value="view">仅查看</option>
+                                        </>
+                                      )}
+                                    </select>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 弹窗底部 */}
+                    <div className="border-t border-gray-200 p-6 bg-gray-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                          <Copy className="w-4 h-4" />
+                          复制链接
+                        </button>
+                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={sendFeishuNotification}
+                            onChange={(e) => setSendFeishuNotification(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          发送飞书通知
+                        </label>
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => setShowShareModal(false)}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          取消
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowShareModal(false);
+                            alert('分享成功！链接已复制到剪贴板，飞书通知已发送。');
+                          }}
+                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          确定
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -10720,6 +11810,201 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Step1 重构：历史参考大促配置模态框 */}
+      {showReferenceDrawer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* 背景遮罩 */}
+          <div 
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowReferenceDrawer(false)}
+          />
+          
+          {/* 模态框内容 */}
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+            {/* 模态框头部 */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">设置参考大促及拟合权重</h3>
+              <button
+                onClick={() => setShowReferenceDrawer(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* 模态框内容区 */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* 蓝色提示 */}
+              <div className="mb-6 p-4 rounded-lg border border-blue-200 bg-blue-50">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-blue-800">
+                    AI 已自动匹配近 3 场大促。调整权重后，系统将重新拟合自然水位线。查看详细还原数据请前往「测算参考」页。
+                  </div>
+                </div>
+              </div>
+              
+              {/* 权重验证提示 */}
+              <div className={`mb-6 p-3 rounded-lg border ${isWeightValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center gap-2">
+                  <span className={isWeightValid ? 'text-green-600' : 'text-red-600'}>
+                    {isWeightValid ? '✓' : '⚠️'}
+                  </span>
+                  <span className={`text-sm ${isWeightValid ? 'text-green-700' : 'text-red-700'}`}>
+                    当前权重总和：{totalWeight}% {isWeightValid ? '（有效）' : '（需调整至100%）'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* 参考大促列表 */}
+              <div className="space-y-4 mb-6">
+                {step1HistoricalReferences.map((reference) => (
+                  <div 
+                    key={reference.id}
+                    className="border border-gray-200 rounded-xl p-4 bg-gray-50"
+                  >
+                    {/* 头部信息 */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        {/* 选择历史大促 */}
+                        <select
+                          value={reference.id}
+                          onChange={(e) => {
+                            // 这里可以做替换历史大促的逻辑
+                          }}
+                          className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          {step1MockData.allHistoricalPromotions.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                        
+                        {/* 相似度Tag */}
+                        <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          相似度 {reference.similarity}%
+                        </div>
+                      </div>
+                      
+                      {/* 删除按钮 */}
+                      <button
+                        onClick={() => deleteReference(reference.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* 权重调节 */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex-1">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={reference.weight}
+                          onChange={(e) => updateWeight(reference.id, parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 w-28">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={reference.weight}
+                          onChange={(e) => {
+                            const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                            updateWeight(reference.id, val);
+                          }}
+                          className="w-16 h-9 text-sm border border-gray-300 rounded-lg px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">%</span>
+                      </div>
+                    </div>
+                    
+                    {/* 还原依据（可展开） */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => toggleExpand(reference.id)}
+                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <span>还原依据（已剔除的补贴增量）</span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform ${expandedReferenceId === reference.id ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {expandedReferenceId === reference.id && (
+                        <ul className="mt-3 text-xs text-gray-600 space-y-1">
+                          {reference.restoredFactors.map((factor, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-blue-600 mt-0.5">•</span>
+                              {factor}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 添加按钮 */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    // 找出未添加的大促
+                    const existingIds = step1HistoricalReferences.map(r => r.id);
+                    const availablePromotions = step1MockData.allHistoricalPromotions.filter(p => !existingIds.includes(p.id));
+                    if (availablePromotions.length > 0) {
+                      addReference(availablePromotions[0].id);
+                    }
+                  }}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="font-medium">添加其他参考大促</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* 模态框底部 */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setShowReferenceDrawer(false)}
+                className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  if (isWeightValid) {
+                    setShowReferenceDrawer(false);
+                  }
+                }}
+                disabled={!isWeightValid}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                确认测算
+              </button>
             </div>
           </div>
         </div>
