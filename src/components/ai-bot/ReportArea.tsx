@@ -9412,7 +9412,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        大盘支付GMV自然水位分日预测
+                        大盘GMV预测
                       </h3>
                       <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                         <input
@@ -9431,6 +9431,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <span className="w-4 h-0.5 bg-blue-600 inline-block"></span> 
                         本次大促自然水位预测线
                       </span>
+                      {!isBusinessLeader && (
+                        <span className="flex items-center gap-1.5 text-xs text-gray-700">
+                          <span className="w-4 h-0.5 bg-orange-500 inline-block" style={{borderTop: '4px solid #F97316'}}></span> 
+                          含预算预测支付GMV
+                        </span>
+                      )}
                       {showHistoricalLines && step1HistoricalReferences.filter(r => r.enabled).map((ref, idx) => {
                         const colors = ['#9CA3AF', '#D1D5DB', '#6B7280'];
                         return (
@@ -9447,6 +9453,14 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         <LineChart 
                           data={step1MockData.predictData.map((d, i) => {
                             const dataPoint: any = { date: d.date, predict: d.value };
+                            
+                            // 计算含预算预测支付GMV（平日1.25倍，爆发日1.4倍）
+                            // 找到峰值日（最大值）
+                            const maxValue = Math.max(...step1MockData.predictData.map(x => x.value));
+                            const isPeakDay = d.value === maxValue;
+                            const multiplier = isPeakDay ? 1.4 : 1.25;
+                            dataPoint.budgetPredict = Math.round(d.value * multiplier);
+                            
                             if (showHistoricalLines) {
                               step1HistoricalReferences.filter(r => r.enabled).forEach(ref => {
                                 const histData = ref.chartData[i];
@@ -9465,14 +9479,25 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             content={({ active, payload, label }) => {
                               if (active && payload && payload.length) {
                                 const predictData = payload.find(p => p.name === '预测自然水位');
-                                const historicalData = payload.filter(p => p.name !== '预测自然水位');
+                                const budgetPredictData = payload.find(p => p.name === '含预算预测支付GMV');
+                                const historicalData = payload.filter(p => p.name !== '预测自然水位' && p.name !== '含预算预测支付GMV');
                                 
                                 return (
                                   <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
-                                    <p className="text-sm font-semibold text-gray-900 mb-2">{label}</p>
+                                    <p className="text-sm font-semibold text-gray-900 mb-2">日期：{label}</p>
                                     {predictData && (
                                       <p className="text-sm text-gray-700 mb-1">
                                         预测自然水位: <span className="font-semibold text-blue-600">{predictData.value.toLocaleString()}万</span>
+                                      </p>
+                                    )}
+                                    {budgetPredictData && !isBusinessLeader && (
+                                      <p className="text-sm text-gray-700 mb-1">
+                                        含预算预测支付GMV: <span className="font-semibold text-orange-600">{budgetPredictData.value.toLocaleString()}万</span>
+                                        {predictData && (
+                                          <span className="text-gray-500 ml-2">
+                                            | 较自然水位提升{Math.round(((Number(budgetPredictData.value) / Number(predictData.value) - 1) * 100))}%
+                                          </span>
+                                        )}
                                       </p>
                                     )}
                                     {historicalData.length > 0 && (
@@ -9503,6 +9528,16 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             dot={{ r: 4, fill: '#2563EB' }} 
                             name="预测自然水位"
                           />
+                          {!isBusinessLeader && (
+                            <Line 
+                              type="monotone" 
+                              dataKey="budgetPredict" 
+                              stroke="#F97316" 
+                              strokeWidth={4} 
+                              dot={{ r: 4, fill: '#F97316' }} 
+                              name="含预算预测支付GMV"
+                            />
+                          )}
                           {showHistoricalLines && step1HistoricalReferences.filter(r => r.enabled).map((ref, idx) => {
                             const colors = ['#9CA3AF', '#D1D5DB', '#6B7280'];
                             return (
