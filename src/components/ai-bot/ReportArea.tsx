@@ -864,7 +864,57 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         { name: '食品快消', value: 1760, ratio: '16.7%', color: '#F59E0B' },
         { name: '美妆个护', value: 1200, ratio: '11.4%', color: '#8B5CF6' },
         { name: '其他', value: 710, ratio: '6.7%', color: '#6B7280' }
-      ]
+      ],
+      dailyBreakdown: {
+        '06/15': [
+          { name: '3C数码', value: 410, ratio: '27.3%', color: '#3B82F6' },
+          { name: '家电', value: 320, ratio: '21.3%', color: '#10B981' },
+          { name: '服饰', value: 240, ratio: '16.0%', color: '#EC4899' },
+          { name: '食品快消', value: 250, ratio: '16.7%', color: '#F59E0B' },
+          { name: '美妆个护', value: 170, ratio: '11.3%', color: '#8B5CF6' },
+          { name: '其他', value: 110, ratio: '7.3%', color: '#6B7280' }
+        ],
+        '06/16': [
+          { name: '3C数码', value: 430, ratio: '27.4%', color: '#3B82F6' },
+          { name: '家电', value: 340, ratio: '21.7%', color: '#10B981' },
+          { name: '服饰', value: 260, ratio: '16.6%', color: '#EC4899' },
+          { name: '食品快消', value: 270, ratio: '17.2%', color: '#F59E0B' },
+          { name: '美妆个护', value: 180, ratio: '11.5%', color: '#8B5CF6' },
+          { name: '其他', value: 90, ratio: '5.7%', color: '#6B7280' }
+        ],
+        '06/17': [
+          { name: '3C数码', value: 450, ratio: '27.6%', color: '#3B82F6' },
+          { name: '家电', value: 360, ratio: '22.1%', color: '#10B981' },
+          { name: '服饰', value: 280, ratio: '17.2%', color: '#EC4899' },
+          { name: '食品快消', value: 290, ratio: '17.8%', color: '#F59E0B' },
+          { name: '美妆个护', value: 190, ratio: '11.7%', color: '#8B5CF6' },
+          { name: '其他', value: 60, ratio: '3.7%', color: '#6B7280' }
+        ],
+        '06/18': [
+          { name: '3C数码', value: 1440, ratio: '26.2%', color: '#3B82F6' },
+          { name: '家电', value: 1100, ratio: '20.0%', color: '#10B981' },
+          { name: '服饰', value: 900, ratio: '16.4%', color: '#EC4899' },
+          { name: '食品快消', value: 920, ratio: '16.7%', color: '#F59E0B' },
+          { name: '美妆个护', value: 640, ratio: '11.6%', color: '#8B5CF6' },
+          { name: '其他', value: 500, ratio: '9.1%', color: '#6B7280' }
+        ],
+        '06/19': [
+          { name: '3C数码', value: 750, ratio: '26.4%', color: '#3B82F6' },
+          { name: '家电', value: 580, ratio: '20.4%', color: '#10B981' },
+          { name: '服饰', value: 460, ratio: '16.2%', color: '#EC4899' },
+          { name: '食品快消', value: 480, ratio: '16.9%', color: '#F59E0B' },
+          { name: '美妆个护', value: 345, ratio: '12.1%', color: '#8B5CF6' },
+          { name: '其他', value: 230, ratio: '8.1%', color: '#6B7280' }
+        ],
+        '06/20': [
+          { name: '3C数码', value: 520, ratio: '26.3%', color: '#3B82F6' },
+          { name: '家电', value: 400, ratio: '20.2%', color: '#10B981' },
+          { name: '服饰', value: 320, ratio: '16.2%', color: '#EC4899' },
+          { name: '食品快消', value: 330, ratio: '16.7%', color: '#F59E0B' },
+          { name: '美妆个护', value: 230, ratio: '11.6%', color: '#8B5CF6' },
+          { name: '其他', value: 180, ratio: '9.1%', color: '#6B7280' }
+        ]
+      }
     },
     // 3C数码视角：看二级行业（包含大盘参照系）
     '3c': {
@@ -1150,7 +1200,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         else if (selectedDashboardIndustry === 'beauty') industryName = '美妆个护';
         
         return {
-          title: `${hoveredDate} - ${industryName} 发货结构`,
+          title: `${hoveredDate} ${industryName}发货结构`,
           totalGmv: dailyData.reduce((sum, d) => sum + d.value, 0),
           children: dailyData
         };
@@ -10465,14 +10515,22 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <ResponsiveContainer width="100%" height="100%">
                             {selectedDashboardIndustry === 'total' && isStackedView ? (
                               // 堆叠面积图模式
-                              <AreaChart data={dashboardMockData['total']?.xAxis.map(date => {
-                                const dataPoint: any = { day: date };
-                                dashboardMockData['total'].series.forEach(series => {
-                                  const point = series.trendData.find(d => d.date === date);
-                                  dataPoint[series.name] = point ? point.value : null;
-                                });
-                                return dataPoint;
-                              }) || []}>
+                              <AreaChart 
+                                data={dashboardMockData['total']?.xAxis.map(date => {
+                                  const dataPoint: any = { day: date };
+                                  dashboardMockData['total'].series.forEach(series => {
+                                    const point = series.trendData.find(d => d.date === date);
+                                    dataPoint[series.name] = point ? point.value : null;
+                                  });
+                                  return dataPoint;
+                                }) || []}
+                                onMouseMove={(data: any) => {
+                                  if (data && data.activeLabel) {
+                                    setHoveredDate(data.activeLabel);
+                                  }
+                                }}
+                                onMouseLeave={() => setHoveredDate(null)}
+                              >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                                 <YAxis tick={{ fontSize: 11 }} unit="万" />
@@ -10524,9 +10582,9 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   });
                                   return dataPoint;
                                 }) || []}
-                                onMouseEnter={(data: any) => {
-                                  if (data && data.day) {
-                                    setHoveredDate(data.day);
+                                onMouseMove={(data: any) => {
+                                  if (data && data.activeLabel) {
+                                    setHoveredDate(data.activeLabel);
                                   }
                                 }}
                                 onMouseLeave={() => setHoveredDate(null)}
@@ -10598,7 +10656,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     
                     {/* 右侧：结构下钻面板（占据约 1/3 宽度） */}
                     <div className="xl:col-span-1">
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm h-full">
+                      <div 
+                        className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm h-full transition-all duration-300 ease-in-out"
+                        key={hoveredDate || 'default'}
+                      >
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="font-bold text-sm text-gray-800">
                             {getRightPanelData(selectedPoint).title}
@@ -10615,7 +10676,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         
                         <div className="space-y-4">
                           {/* 环形图 */}
-                          <div className="h-48">
+                          <div className="h-48 transition-opacity duration-300">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
@@ -10638,17 +10699,17 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           </div>
                           
                           {/* 总 GMV 显示 */}
-                          <div className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
+                          <div className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg transition-all duration-300">
                             <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
                             <p className="text-xl font-bold text-gray-900">{getRightPanelData(selectedPoint).totalGmv.toLocaleString()}万</p>
                           </div>
                           
                           {/* 二级行业数据列表 */}
-                          <div>
+                          <div className="transition-opacity duration-300">
                             <p className="text-xs text-gray-600 mb-2">行业明细：</p>
                             <div className="space-y-2">
                               {getRightPanelData(selectedPoint).children.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-all duration-200">
                                   <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
                                     <span className="text-xs font-medium text-gray-800">{item.name}</span>
