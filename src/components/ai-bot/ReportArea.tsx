@@ -10573,8 +10573,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 )}
                                 {/* 所有系列显示为折线，绑定到左侧Y轴（排除大盘总计） */}
                                 {dashboardMockData[selectedDashboardIndustry]?.series
-                                  .filter(series => series.name !== '大盘总计')
-                                  .map((series) => (
+                                  .filter((series: any) => series.name !== '大盘总计')
+                                  .map((series: any) => (
                                     <Line 
                                       yAxisId="left"
                                       key={series.name}
@@ -10582,7 +10582,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                       dataKey={series.name} 
                                       stroke={series.color}
                                       strokeWidth={series.isMain ? 3 : 1.5}
-                                      strokeDasharray={series.isReference ? '5 5' : undefined}
+                                      strokeDasharray={series.isReference || series.isMain ? '5 5' : undefined}
                                       dot={{ 
                                         r: series.isMain ? 4 : (series.isReference ? 0 : 2), 
                                         strokeWidth: series.isMain ? 2 : 1,
