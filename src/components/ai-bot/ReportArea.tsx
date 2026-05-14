@@ -5983,7 +5983,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         {/* 顶部导航栏 */}
         <div className="flex items-center justify-between px-6 bg-white border-b border-gray-200 shrink-0">
           <div className="flex items-center">
-            {(['budget', 'target', 'monitor'] as const).map((tab) => {
+            {(['target', 'budget', 'monitor'] as const).map((tab) => {
               const labels = { budget: '预算测算&调配', target: '目标测算', monitor: '促中监控' };
               return (
                 <button
