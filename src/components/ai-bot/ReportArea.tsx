@@ -6904,6 +6904,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   测算目标
                 </button>
                 <button
+                  onClick={() => setTargetTab('calibrate')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'calibrate' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Activity className="w-4 h-4" />
+                  促中校准
+                </button>
+                <button
                   onClick={() => setTargetTab('reference')}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'reference' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
@@ -6916,13 +6923,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                 >
                   <Workflow className="w-4 h-4" />
                   测算逻辑
-                </button>
-                <button
-                  onClick={() => setTargetTab('calibrate')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'calibrate' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  <Activity className="w-4 h-4" />
-                  促中校准
                 </button>
               </div>
               
