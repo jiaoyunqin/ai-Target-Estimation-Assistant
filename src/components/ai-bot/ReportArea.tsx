@@ -685,7 +685,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [selectedIndustryForDonut, setSelectedIndustryForDonut] = useState('3C数码');
   const [selectedDashboardIndustry, setSelectedDashboardIndustry] = useState('total'); // 'total' | '3c' | 'home' | 'beauty'
   const [showIndustryDeliveryCharts, setShowIndustryDeliveryCharts] = useState(false); // 控制行业发货GMV图表显示
-  const [isStackedView, setIsStackedView] = useState(false); // 是否显示堆叠面积图模式
   const [hoveredDate, setHoveredDate] = useState<string | null>(null); // 鼠标hover的日期
   const [showAiDetail, setShowAiDetail] = useState(false); // AI解释弹窗
   const [showShareModal, setShowShareModal] = useState(false); // 分享弹窗
@@ -10483,7 +10482,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                 onChange={(e) => {
                                   setSelectedDashboardIndustry(e.target.value);
                                   setSelectedPoint({}); // 切换行业时重置选中点
-                                  setIsStackedView(false); // 切换行业时重置堆叠视图
                                 }}
                                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs transition-colors border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
@@ -10495,100 +10493,28 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             )}
                           </div>
                           <div className="flex items-center gap-2">
-                            {/* 堆叠视图切换按钮 - 仅在大盘视角显示 */}
-                            {selectedDashboardIndustry === 'total' && (
-                              <button
-                                onClick={() => setIsStackedView(!isStackedView)}
-                                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                                  isStackedView 
-                                    ? 'bg-orange-100 text-orange-700' 
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                              >
-                                {isStackedView ? '📊 堆叠视图' : '📈 普通视图'}
-                              </button>
-                            )}
                             <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
                           </div>
                         </div>
                         <div className="h-52">
                           <ResponsiveContainer width="100%" height="100%">
-                            {selectedDashboardIndustry === 'total' && isStackedView ? (
-                              // 堆叠面积图模式
-                              <AreaChart 
-                                data={dashboardMockData['total']?.xAxis.map(date => {
-                                  const dataPoint: any = { day: date };
-                                  dashboardMockData['total'].series.forEach(series => {
-                                    const point = series.trendData.find(d => d.date === date);
-                                    dataPoint[series.name] = point ? point.value : null;
-                                  });
-                                  return dataPoint;
-                                }) || []}
-                                onMouseMove={(data: any) => {
-                                  if (data && data.activeLabel) {
-                                    setHoveredDate(data.activeLabel);
-                                  }
-                                }}
-                                onMouseLeave={() => setHoveredDate(null)}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} unit="万" />
-                                <Tooltip
-                                  content={({ active, payload, label }) => {
-                                    if (active && payload && payload.length) {
-                                      let total = 0;
-                                      payload.forEach((p: any) => { total += p.value; });
-                                      return (
-                                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
-                                          <p className="font-bold text-gray-800 mb-2">{label} - 总计: {total}万</p>
-                                          {payload.map((entry: any, index: number) => (
-                                            <p key={index} className="flex items-center gap-2">
-                                              <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: entry.color }}></span>
-                                              <span className="text-gray-600">{entry.name}：</span>
-                                              <span className="font-bold text-gray-900">{entry.value}</span>
-                                              <span className="text-gray-500">万</span>
-                                            </p>
-                                          ))}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  }}
-                                />
-                                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                                {dashboardMockData['total'].series.map((series) => (
-                                  <Area
-                                    key={series.name}
-                                    type="monotone"
-                                    dataKey={series.name}
-                                    stackId="total"
-                                    stroke={series.color}
-                                    fill={series.color}
-                                    fillOpacity={0.6}
-                                    strokeWidth={series.isMain ? 2 : 1}
-                                    name={series.name}
-                                  />
-                                ))}
-                              </AreaChart>
-                            ) : (
-                              // 普通视图模式
-                              <ComposedChart 
-                                data={dashboardMockData[selectedDashboardIndustry]?.xAxis.map(date => {
-                                  const dataPoint: any = { day: date };
-                                  dashboardMockData[selectedDashboardIndustry].series.forEach(series => {
-                                    const point = series.trendData.find(d => d.date === date);
-                                    dataPoint[series.name] = point ? point.value : null;
-                                  });
-                                  return dataPoint;
-                                }) || []}
-                                onMouseMove={(data: any) => {
-                                  if (data && data.activeLabel) {
-                                    setHoveredDate(data.activeLabel);
-                                  }
-                                }}
-                                onMouseLeave={() => setHoveredDate(null)}
-                              >
+                            {/* 普通视图模式 */}
+                            <ComposedChart 
+                              data={dashboardMockData[selectedDashboardIndustry]?.xAxis.map(date => {
+                                const dataPoint: any = { day: date };
+                                dashboardMockData[selectedDashboardIndustry].series.forEach(series => {
+                                  const point = series.trendData.find(d => d.date === date);
+                                  dataPoint[series.name] = point ? point.value : null;
+                                });
+                                return dataPoint;
+                              }) || []}
+                              onMouseMove={(data: any) => {
+                                if (data && data.activeLabel) {
+                                  setHoveredDate(data.activeLabel);
+                                }
+                              }}
+                              onMouseLeave={() => setHoveredDate(null)}
+                            >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                                 <YAxis tick={{ fontSize: 11 }} unit="万" />
@@ -10648,7 +10574,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   />
                                 ))}
                               </ComposedChart>
-                            )}
                           </ResponsiveContainer>
                         </div>
                       </div>
