@@ -617,7 +617,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   // Step5 测算结果输出相关状态
   const [resultChartTab, setResultChartTab] = useState<'industry'>('industry');
-  const [resultTableTab, setResultTableTab] = useState<'industry' | 'phase' | 'subIndustry' | 'daily' | 'delivery' | 'session'>('industry');
+  const [resultTableTab, setResultTableTab] = useState<'industry' | 'phase' | 'subIndustry' | 'daily' | 'delivery' | 'session' | 'dailyDetail'>('industry');
   const [selectedIndustryForDonut, setSelectedIndustryForDonut] = useState('3C数码');
   const [selectedDashboardIndustry, setSelectedDashboardIndustry] = useState('total'); // 'total' | '3c' | 'home' | 'beauty'
   const [showIndustryDeliveryCharts, setShowIndustryDeliveryCharts] = useState(false); // 控制行业发货GMV图表显示
@@ -683,6 +683,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   interface LineSeries {
     name: string;
     isMain: boolean;
+    isReference?: boolean;
     color: string;
     trendData: TrendPoint[];
   }
@@ -691,6 +692,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     series: LineSeries[];
     totalGmv: number;
     breakdown: BreakdownItem[];
+    dailyBreakdown?: Record<string, BreakdownItem[]>;
   }
   
   const dashboardMockData: Record<string, IndustryDashboardData> = {
@@ -798,57 +800,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
         { name: '食品快消', value: 1760, ratio: '16.7%', color: '#F59E0B' },
         { name: '美妆个护', value: 1200, ratio: '11.4%', color: '#8B5CF6' },
         { name: '其他', value: 710, ratio: '6.7%', color: '#6B7280' }
-      ],
-      dailyBreakdown: {
-        '06/15': [
-          { name: '3C数码', value: 450, color: '#3B82F6' },
-          { name: '家电', value: 350, color: '#10B981' },
-          { name: '服饰', value: 240, color: '#EC4899' },
-          { name: '食品快消', value: 250, color: '#F59E0B' },
-          { name: '美妆个护', value: 170, color: '#8B5CF6' },
-          { name: '其他', value: 110, color: '#6B7280' }
-        ],
-        '06/16': [
-          { name: '3C数码', value: 480, color: '#3B82F6' },
-          { name: '家电', value: 370, color: '#10B981' },
-          { name: '服饰', value: 260, color: '#EC4899' },
-          { name: '食品快消', value: 270, color: '#F59E0B' },
-          { name: '美妆个护', value: 180, color: '#8B5CF6' },
-          { name: '其他', value: 90, color: '#6B7280' }
-        ],
-        '06/17': [
-          { name: '3C数码', value: 510, color: '#3B82F6' },
-          { name: '家电', value: 390, color: '#10B981' },
-          { name: '服饰', value: 280, color: '#EC4899' },
-          { name: '食品快消', value: 290, color: '#F59E0B' },
-          { name: '美妆个护', value: 190, color: '#8B5CF6' },
-          { name: '其他', value: 60, color: '#6B7280' }
-        ],
-        '06/18': [
-          { name: '3C数码', value: 1440, color: '#3B82F6' },
-          { name: '家电', value: 1100, color: '#10B981' },
-          { name: '服饰', value: 900, color: '#EC4899' },
-          { name: '食品快消', value: 920, color: '#F59E0B' },
-          { name: '美妆个护', value: 640, color: '#8B5CF6' },
-          { name: '其他', value: 500, color: '#6B7280' }
-        ],
-        '06/19': [
-          { name: '3C数码', value: 720, color: '#3B82F6' },
-          { name: '家电', value: 580, color: '#10B981' },
-          { name: '服饰', value: 460, color: '#EC4899' },
-          { name: '食品快消', value: 480, color: '#F59E0B' },
-          { name: '美妆个护', value: 345, color: '#8B5CF6' },
-          { name: '其他', value: 230, color: '#6B7280' }
-        ],
-        '06/20': [
-          { name: '3C数码', value: 520, color: '#3B82F6' },
-          { name: '家电', value: 400, color: '#10B981' },
-          { name: '服饰', value: 320, color: '#EC4899' },
-          { name: '食品快消', value: 330, color: '#F59E0B' },
-          { name: '美妆个护', value: 230, color: '#8B5CF6' },
-          { name: '其他', value: 180, color: '#6B7280' }
-        ]
-      }
+      ]
     },
     // 3C数码视角：看二级行业（包含大盘参照系）
     '3c': {
@@ -9361,22 +9313,14 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <ResponsiveContainer width="100%" height="100%">
                             {selectedDashboardIndustry === 'total' && isStackedView ? (
                               // 堆叠面积图模式
-                              <AreaChart 
-                                data={dashboardMockData['total']?.xAxis.map(date => {
-                                  const dataPoint: any = { day: date };
-                                  dashboardMockData['total'].series.forEach(series => {
-                                    const point = series.trendData.find(d => d.date === date);
-                                    dataPoint[series.name] = point ? point.value : null;
-                                  });
-                                  return dataPoint;
-                                }) || []}
-                                onMouseEnter={(data) => {
-                                  if (data && data.day) {
-                                    setHoveredDate(data.day);
-                                  }
-                                }}
-                                onMouseLeave={() => setHoveredDate(null)}
-                              >
+                              <AreaChart data={dashboardMockData['total']?.xAxis.map(date => {
+                                const dataPoint: any = { day: date };
+                                dashboardMockData['total'].series.forEach(series => {
+                                  const point = series.trendData.find(d => d.date === date);
+                                  dataPoint[series.name] = point ? point.value : null;
+                                });
+                                return dataPoint;
+                              }) || []}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                                 <YAxis tick={{ fontSize: 11 }} unit="万" />
@@ -9428,7 +9372,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   });
                                   return dataPoint;
                                 }) || []}
-                                onMouseEnter={(data) => {
+                                onMouseEnter={(data: any) => {
                                   if (data && data.day) {
                                     setHoveredDate(data.day);
                                   }
