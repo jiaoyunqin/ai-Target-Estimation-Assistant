@@ -32,6 +32,27 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   // 判断是否是业务Leader视角（简化UI）
   const isBusinessLeader = role === 'leader' && industryContext !== null;
   const isPromotionBudgetPage = reportType === 'promotion_budget';
+
+  // 辅助函数：获取颜色和箭头
+  const getProgressColorAndIcon = (target: number, forecast: number) => {
+    const ratio = target > 0 ? forecast / target : 0;
+    const percentage = Math.min(ratio * 100, 100);
+    
+    let color = '#F53F3F'; // 默认红色
+    let icon = '↓';
+    if (ratio >= 1) {
+      color = '#00B42A'; // 绿色
+      icon = '↑';
+    } else if (ratio >= 0.9) {
+      color = '#FF7D00'; // 橙色
+      icon = '↓';
+    } else {
+      color = '#F53F3F'; // 红色
+      icon = '↓';
+    }
+    
+    return { color, icon, percentage: Math.round(ratio * 100), diff: forecast - target };
+  };
   
   // 根据大促类型获取对应的历史参考数据配置
   const getPromotionConfig = (type: string) => {
@@ -10426,36 +10447,36 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/15</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/16</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/17</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/18</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-xs">爆发期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/19</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>06/20</div>
                                 <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
-                                <div className="text-xs text-gray-400 mt-0.5">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-0.5">预测</div>
                               </th>
                               <th className="text-center py-3 px-2 font-medium text-gray-600">
                                 <div>全周期合计</div>
-                                <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                                <div className="text-xs text-gray-400 mt-1">预测</div>
                               </th>
                             </tr>
                           </thead>
@@ -10465,125 +10486,125 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 3C数码
                               </td>
-                              <td className="py-2 px-2 text-center">550 <span className="text-gray-400">/</span> <span className="text-green-600">587</span></td>
-                              <td className="py-2 px-2 text-center">680 <span className="text-gray-400">/</span> <span className="text-green-600">721</span></td>
-                              <td className="py-2 px-2 text-center">520 <span className="text-gray-400">/</span> <span className="text-orange-600">500</span></td>
-                              <td className="py-2 px-2 text-center">1,720 <span className="text-gray-400">/</span> <span className="text-green-600">1,863</span></td>
-                              <td className="py-2 px-2 text-center">780 <span className="text-gray-400">/</span> <span className="text-orange-600">750</span></td>
-                              <td className="py-2 px-2 text-center">510 <span className="text-gray-400">/</span> <span className="text-green-600">527</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">4,760 <span className="text-gray-400">/</span> <span className="text-green-600">4,948</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">587</td>
+                              <td className="py-2 px-2 text-center text-gray-700">721</td>
+                              <td className="py-2 px-2 text-center text-gray-700">500</td>
+                              <td className="py-2 px-2 text-center text-gray-700">1,863</td>
+                              <td className="py-2 px-2 text-center text-gray-700">750</td>
+                              <td className="py-2 px-2 text-center text-gray-700">527</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">4,948</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 手机
                               </td>
-                              <td className="py-2 px-2 text-center">280 <span className="text-gray-400">/</span> <span className="text-green-600">290</span></td>
-                              <td className="py-2 px-2 text-center">360 <span className="text-gray-400">/</span> <span className="text-green-600">380</span></td>
-                              <td className="py-2 px-2 text-center">270 <span className="text-gray-400">/</span> <span className="text-orange-600">260</span></td>
-                              <td className="py-2 px-2 text-center">900 <span className="text-gray-400">/</span> <span className="text-green-600">960</span></td>
-                              <td className="py-2 px-2 text-center">410 <span className="text-gray-400">/</span> <span className="text-orange-600">400</span></td>
-                              <td className="py-2 px-2 text-center">270 <span className="text-gray-400">/</span> <span className="text-green-600">284</span></td>
-                              <td className="py-2 px-2 text-center font-medium">2,490 <span className="text-gray-400">/</span> <span className="text-green-600">2,574</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">290</td>
+                              <td className="py-2 px-2 text-center text-gray-700">380</td>
+                              <td className="py-2 px-2 text-center text-gray-700">260</td>
+                              <td className="py-2 px-2 text-center text-gray-700">960</td>
+                              <td className="py-2 px-2 text-center text-gray-700">400</td>
+                              <td className="py-2 px-2 text-center text-gray-700">284</td>
+                              <td className="py-2 px-2 text-center font-medium text-gray-700">2,574</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 电脑整机
                               </td>
-                              <td className="py-2 px-2 text-center">170 <span className="text-gray-400">/</span> <span className="text-green-600">185</span></td>
-                              <td className="py-2 px-2 text-center">210 <span className="text-gray-400">/</span> <span className="text-green-600">225</span></td>
-                              <td className="py-2 px-2 text-center">160 <span className="text-gray-400">/</span> <span className="text-orange-600">150</span></td>
-                              <td className="py-2 px-2 text-center">550 <span className="text-gray-400">/</span> <span className="text-green-600">590</span></td>
-                              <td className="py-2 px-2 text-center">240 <span className="text-gray-400">/</span> <span className="text-orange-600">230</span></td>
-                              <td className="py-2 px-2 text-center">160 <span className="text-gray-400">/</span> <span className="text-green-600">164</span></td>
-                              <td className="py-2 px-2 text-center font-medium">1,490 <span className="text-gray-400">/</span> <span className="text-green-600">1,544</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">185</td>
+                              <td className="py-2 px-2 text-center text-gray-700">225</td>
+                              <td className="py-2 px-2 text-center text-gray-700">150</td>
+                              <td className="py-2 px-2 text-center text-gray-700">590</td>
+                              <td className="py-2 px-2 text-center text-gray-700">230</td>
+                              <td className="py-2 px-2 text-center text-gray-700">164</td>
+                              <td className="py-2 px-2 text-center font-medium text-gray-700">1,544</td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 数码配件
                               </td>
-                              <td className="py-2 px-2 text-center">100 <span className="text-gray-400">/</span> <span className="text-green-600">112</span></td>
-                              <td className="py-2 px-2 text-center">110 <span className="text-gray-400">/</span> <span className="text-green-600">116</span></td>
-                              <td className="py-2 px-2 text-center">90 <span className="text-gray-400">/</span> <span className="text-gray-500">90</span></td>
-                              <td className="py-2 px-2 text-center">270 <span className="text-gray-400">/</span> <span className="text-green-600">313</span></td>
-                              <td className="py-2 px-2 text-center">130 <span className="text-gray-400">/</span> <span className="text-orange-600">120</span></td>
-                              <td className="py-2 px-2 text-center">80 <span className="text-gray-400">/</span> <span className="text-orange-600">79</span></td>
-                              <td className="py-2 px-2 text-center font-medium">780 <span className="text-gray-400">/</span> <span className="text-green-600">830</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">112</td>
+                              <td className="py-2 px-2 text-center text-gray-700">116</td>
+                              <td className="py-2 px-2 text-center text-gray-700">90</td>
+                              <td className="py-2 px-2 text-center text-gray-700">313</td>
+                              <td className="py-2 px-2 text-center text-gray-700">120</td>
+                              <td className="py-2 px-2 text-center text-gray-700">79</td>
+                              <td className="py-2 px-2 text-center font-medium text-gray-700">830</td>
                             </tr>
                             {/* 家电家居 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 家电家居
                               </td>
-                              <td className="py-2 px-2 text-center">380 <span className="text-gray-400">/</span> <span className="text-orange-600">363</span></td>
-                              <td className="py-2 px-2 text-center">430 <span className="text-gray-400">/</span> <span className="text-green-600">449</span></td>
-                              <td className="py-2 px-2 text-center">330 <span className="text-gray-400">/</span> <span className="text-green-600">338</span></td>
-                              <td className="py-2 px-2 text-center">1,200 <span className="text-gray-400">/</span> <span className="text-green-600">1,238</span></td>
-                              <td className="py-2 px-2 text-center">500 <span className="text-gray-400">/</span> <span className="text-orange-600">486</span></td>
-                              <td className="py-2 px-2 text-center">330 <span className="text-gray-400">/</span> <span className="text-orange-600">309</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">3,170 <span className="text-gray-400">/</span> <span className="text-gray-500">3,183</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">363</td>
+                              <td className="py-2 px-2 text-center text-gray-700">449</td>
+                              <td className="py-2 px-2 text-center text-gray-700">338</td>
+                              <td className="py-2 px-2 text-center text-gray-700">1,238</td>
+                              <td className="py-2 px-2 text-center text-gray-700">486</td>
+                              <td className="py-2 px-2 text-center text-gray-700">309</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">3,183</td>
                             </tr>
                             {/* 美妆护肤 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 美妆护肤
                               </td>
-                              <td className="py-2 px-2 text-center">420 <span className="text-gray-400">/</span> <span className="text-orange-600">413</span></td>
-                              <td className="py-2 px-2 text-center">480 <span className="text-gray-400">/</span> <span className="text-orange-600">474</span></td>
-                              <td className="py-2 px-2 text-center">370 <span className="text-gray-400">/</span> <span className="text-green-600">382</span></td>
-                              <td className="py-2 px-2 text-center">1,350 <span className="text-gray-400">/</span> <span className="text-green-600">1,365</span></td>
-                              <td className="py-2 px-2 text-center">590 <span className="text-gray-400">/</span> <span className="text-orange-600">572</span></td>
-                              <td className="py-2 px-2 text-center">360 <span className="text-gray-400">/</span> <span className="text-green-600">368</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">3,570 <span className="text-gray-400">/</span> <span className="text-gray-500">3,574</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">413</td>
+                              <td className="py-2 px-2 text-center text-gray-700">474</td>
+                              <td className="py-2 px-2 text-center text-gray-700">382</td>
+                              <td className="py-2 px-2 text-center text-gray-700">1,365</td>
+                              <td className="py-2 px-2 text-center text-gray-700">572</td>
+                              <td className="py-2 px-2 text-center text-gray-700">368</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">3,574</td>
                             </tr>
                             {/* 服饰鞋包 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 服饰鞋包
                               </td>
-                              <td className="py-2 px-2 text-center">320 <span className="text-gray-400">/</span> <span className="text-green-600">327</span></td>
-                              <td className="py-2 px-2 text-center">370 <span className="text-gray-400">/</span> <span className="text-orange-600">364</span></td>
-                              <td className="py-2 px-2 text-center">280 <span className="text-gray-400">/</span> <span className="text-green-600">293</span></td>
-                              <td className="py-2 px-2 text-center">1,020 <span className="text-gray-400">/</span> <span className="text-green-600">1,074</span></td>
-                              <td className="py-2 px-2 text-center">410 <span className="text-gray-400">/</span> <span className="text-orange-600">397</span></td>
-                              <td className="py-2 px-2 text-center">260 <span className="text-gray-400">/</span> <span className="text-green-600">273</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">2,660 <span className="text-gray-400">/</span> <span className="text-green-600">2,728</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">327</td>
+                              <td className="py-2 px-2 text-center text-gray-700">364</td>
+                              <td className="py-2 px-2 text-center text-gray-700">293</td>
+                              <td className="py-2 px-2 text-center text-gray-700">1,074</td>
+                              <td className="py-2 px-2 text-center text-gray-700">397</td>
+                              <td className="py-2 px-2 text-center text-gray-700">273</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">2,728</td>
                             </tr>
                             {/* 食品快消 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 食品快消
                               </td>
-                              <td className="py-2 px-2 text-center">210 <span className="text-gray-400">/</span> <span className="text-orange-600">201</span></td>
-                              <td className="py-2 px-2 text-center">240 <span className="text-gray-400">/</span> <span className="text-orange-600">236</span></td>
-                              <td className="py-2 px-2 text-center">180 <span className="text-gray-400">/</span> <span className="text-green-600">185</span></td>
-                              <td className="py-2 px-2 text-center">660 <span className="text-gray-400">/</span> <span className="text-orange-600">651</span></td>
-                              <td className="py-2 px-2 text-center">270 <span className="text-gray-400">/</span> <span className="text-orange-600">261</span></td>
-                              <td className="py-2 px-2 text-center">170 <span className="text-gray-400">/</span> <span className="text-orange-600">166</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">1,730 <span className="text-gray-400">/</span> <span className="text-orange-600">1,700</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">201</td>
+                              <td className="py-2 px-2 text-center text-gray-700">236</td>
+                              <td className="py-2 px-2 text-center text-gray-700">185</td>
+                              <td className="py-2 px-2 text-center text-gray-700">651</td>
+                              <td className="py-2 px-2 text-center text-gray-700">261</td>
+                              <td className="py-2 px-2 text-center text-gray-700">166</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">1,700</td>
                             </tr>
                             {/* 其他行业 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 其他行业
                               </td>
-                              <td className="py-2 px-2 text-center">140 <span className="text-gray-400">/</span> <span className="text-orange-600">136</span></td>
-                              <td className="py-2 px-2 text-center">160 <span className="text-gray-400">/</span> <span className="text-orange-600">155</span></td>
-                              <td className="py-2 px-2 text-center">120 <span className="text-gray-400">/</span> <span className="text-green-600">122</span></td>
-                              <td className="py-2 px-2 text-center">450 <span className="text-gray-400">/</span> <span className="text-green-600">453</span></td>
-                              <td className="py-2 px-2 text-center">180 <span className="text-gray-400">/</span> <span className="text-orange-600">173</span></td>
-                              <td className="py-2 px-2 text-center">110 <span className="text-gray-400">/</span> <span className="text-green-600">114</span></td>
-                              <td className="py-2 px-2 text-center bg-blue-50 font-bold">1,160 <span className="text-gray-400">/</span> <span className="text-gray-500">1,153</span></td>
+                              <td className="py-2 px-2 text-center text-gray-700">136</td>
+                              <td className="py-2 px-2 text-center text-gray-700">155</td>
+                              <td className="py-2 px-2 text-center text-gray-700">122</td>
+                              <td className="py-2 px-2 text-center text-gray-700">453</td>
+                              <td className="py-2 px-2 text-center text-gray-700">173</td>
+                              <td className="py-2 px-2 text-center text-gray-700">114</td>
+                              <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">1,153</td>
                             </tr>
                             {/* 大盘总计 */}
                             <tr className="bg-gray-100">
                               <td className="py-2 px-4 font-bold text-gray-900">大盘总计</td>
-                              <td className="py-2 px-2 text-center font-bold">2,020 <span className="text-gray-400">/</span> <span className="text-green-600">2,027</span></td>
-                              <td className="py-2 px-2 text-center font-bold">2,360 <span className="text-gray-400">/</span> <span className="text-green-600">2,399</span></td>
-                              <td className="py-2 px-2 text-center font-bold">1,800 <span className="text-gray-400">/</span> <span className="text-green-600">1,820</span></td>
-                              <td className="py-2 px-2 text-center font-bold">6,380 <span className="text-gray-400">/</span> <span className="text-green-600">6,644</span></td>
-                              <td className="py-2 px-2 text-center font-bold">2,730 <span className="text-gray-400">/</span> <span className="text-orange-600">2,639</span></td>
-                              <td className="py-2 px-2 text-center font-bold">1,740 <span className="text-gray-400">/</span> <span className="text-green-600">1,757</span></td>
-                              <td className="py-2 px-2 text-center font-bold bg-blue-100">17,030 <span className="text-gray-400">/</span> <span className="text-green-600">17,286</span></td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">2,027</td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">2,399</td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">1,820</td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">6,644</td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">2,639</td>
+                              <td className="py-2 px-2 text-center font-bold text-gray-900">1,757</td>
+                              <td className="py-2 px-2 text-center font-bold bg-blue-100 text-gray-900">17,286</td>
                             </tr>
                           </tbody>
                         </>
@@ -10619,95 +10640,575 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 3C数码
                               </td>
-                              <td className="py-2 px-3 text-center">1,750 <span className="text-gray-400">/</span> <span className="text-green-600">1,808</span></td>
-                              <td className="py-2 px-3 text-center">1,720 <span className="text-gray-400">/</span> <span className="text-green-600">1,863</span></td>
-                              <td className="py-2 px-3 text-center">1,290 <span className="text-gray-400">/</span> <span className="text-orange-600">1,277</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">4,760 <span className="text-gray-400">/</span> <span className="text-green-600">4,948</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,750</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,808</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,720</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,863</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,290</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>1,277</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">4,760</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>4,948</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 手机
                               </td>
-                              <td className="py-2 px-3 text-center">910 <span className="text-gray-400">/</span> <span className="text-green-600">930</span></td>
-                              <td className="py-2 px-3 text-center">900 <span className="text-gray-400">/</span> <span className="text-green-600">960</span></td>
-                              <td className="py-2 px-3 text-center">680 <span className="text-gray-400">/</span> <span className="text-gray-500">684</span></td>
-                              <td className="py-2 px-3 text-center font-medium">2,490 <span className="text-gray-400">/</span> <span className="text-green-600">2,574</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">910</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>930</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">900</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>960</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">680</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>684</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-medium">
+                                    <span className="text-gray-700">2,490</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>2,574</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 电脑整机
                               </td>
-                              <td className="py-2 px-3 text-center">540 <span className="text-gray-400">/</span> <span className="text-green-600">560</span></td>
-                              <td className="py-2 px-3 text-center">550 <span className="text-gray-400">/</span> <span className="text-green-600">590</span></td>
-                              <td className="py-2 px-3 text-center">400 <span className="text-gray-400">/</span> <span className="text-orange-600">394</span></td>
-                              <td className="py-2 px-3 text-center font-medium">1,490 <span className="text-gray-400">/</span> <span className="text-green-600">1,544</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">540</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>560</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">550</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>590</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">400</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>394</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '98%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-medium">
+                                    <span className="text-gray-700">1,490</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,544</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 pl-6 text-gray-700">
                                 <span className="text-gray-400">↳</span> 数码配件
                               </td>
-                              <td className="py-2 px-3 text-center">300 <span className="text-gray-400">/</span> <span className="text-green-600">318</span></td>
-                              <td className="py-2 px-3 text-center">270 <span className="text-gray-400">/</span> <span className="text-green-600">313</span></td>
-                              <td className="py-2 px-3 text-center">210 <span className="text-gray-400">/</span> <span className="text-orange-600">199</span></td>
-                              <td className="py-2 px-3 text-center font-medium">780 <span className="text-gray-400">/</span> <span className="text-green-600">830</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">300</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>318</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">270</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>313</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">210</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>199</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '95%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-medium">
+                                    <span className="text-gray-700">780</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>830</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 家电家居 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 家电家居
                               </td>
-                              <td className="py-2 px-3 text-center">1,140 <span className="text-gray-400">/</span> <span className="text-gray-500">1,150</span></td>
-                              <td className="py-2 px-3 text-center">1,200 <span className="text-gray-400">/</span> <span className="text-green-600">1,238</span></td>
-                              <td className="py-2 px-3 text-center">830 <span className="text-gray-400">/</span> <span className="text-orange-600">795</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">3,170 <span className="text-gray-400">/</span> <span className="text-gray-500">3,183</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,140</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>1,150</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,200</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,238</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">830</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>795</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '96%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">3,170</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>3,183</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 美妆护肤 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 美妆护肤
                               </td>
-                              <td className="py-2 px-3 text-center">1,270 <span className="text-gray-400">/</span> <span className="text-gray-500">1,269</span></td>
-                              <td className="py-2 px-3 text-center">1,350 <span className="text-gray-400">/</span> <span className="text-green-600">1,365</span></td>
-                              <td className="py-2 px-3 text-center">950 <span className="text-gray-400">/</span> <span className="text-orange-600">940</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">3,570 <span className="text-gray-400">/</span> <span className="text-gray-500">3,574</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,270</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>1,269</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,350</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,365</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">950</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>940</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">3,570</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>3,574</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 服饰鞋包 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 服饰鞋包
                               </td>
-                              <td className="py-2 px-3 text-center">970 <span className="text-gray-400">/</span> <span className="text-green-600">984</span></td>
-                              <td className="py-2 px-3 text-center">1,020 <span className="text-gray-400">/</span> <span className="text-green-600">1,074</span></td>
-                              <td className="py-2 px-3 text-center">670 <span className="text-gray-400">/</span> <span className="text-gray-500">670</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">2,660 <span className="text-gray-400">/</span> <span className="text-green-600">2,728</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">970</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>984</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">1,020</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>1,074</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">670</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>670</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>-</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">2,660</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>2,728</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 食品快消 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 食品快消
                               </td>
-                              <td className="py-2 px-3 text-center">630 <span className="text-gray-400">/</span> <span className="text-orange-600">622</span></td>
-                              <td className="py-2 px-3 text-center">660 <span className="text-gray-400">/</span> <span className="text-orange-600">651</span></td>
-                              <td className="py-2 px-3 text-center">440 <span className="text-gray-400">/</span> <span className="text-orange-600">427</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">1,730 <span className="text-gray-400">/</span> <span className="text-orange-600">1,700</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">630</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>622</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">660</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>651</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">440</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>427</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '97%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">1,730</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>1,700</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '98%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 其他行业 */}
                             <tr className="hover:bg-gray-50">
                               <td className="py-2 px-4 font-medium text-gray-900">
                                 <span className="text-blue-500">▶</span> 其他行业
                               </td>
-                              <td className="py-2 px-3 text-center">420 <span className="text-gray-400">/</span> <span className="text-orange-600">413</span></td>
-                              <td className="py-2 px-3 text-center">450 <span className="text-gray-400">/</span> <span className="text-green-600">453</span></td>
-                              <td className="py-2 px-3 text-center">290 <span className="text-gray-400">/</span> <span className="text-orange-600">287</span></td>
-                              <td className="py-2 px-3 text-center bg-blue-50 font-bold">1,160 <span className="text-gray-400">/</span> <span className="text-gray-500">1,153</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">420</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>413</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '98%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">450</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>453</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-700">290</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>287</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-50">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">1,160</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#9CA3AF' }}>1,153</span>
+                                    <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#9CA3AF' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                             {/* 大盘总计 */}
                             <tr className="bg-gray-100">
                               <td className="py-2 px-4 font-bold text-gray-900">大盘总计</td>
-                              <td className="py-2 px-3 text-center font-bold">6,180 <span className="text-gray-400">/</span> <span className="text-green-600">6,246</span></td>
-                              <td className="py-2 px-3 text-center font-bold">6,380 <span className="text-gray-400">/</span> <span className="text-green-600">6,644</span></td>
-                              <td className="py-2 px-3 text-center font-bold">4,470 <span className="text-gray-400">/</span> <span className="text-orange-600">4,396</span></td>
-                              <td className="py-2 px-3 text-center font-bold bg-blue-100">17,030 <span className="text-gray-400">/</span> <span className="text-green-600">17,286</span></td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">6,180</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>6,246</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">6,380</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>6,644</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">4,470</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#FF7D00' }}>4,396</span>
+                                    <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '98%', backgroundColor: '#FF7D00' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center bg-blue-100">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1 font-bold">
+                                    <span className="text-gray-900">17,030</span>
+                                    <span className="text-gray-400">/</span>
+                                    <span style={{ color: '#00B42A' }}>17,286</span>
+                                    <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                  </div>
+                                  <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                           </tbody>
                         </>
