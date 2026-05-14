@@ -1,0 +1,63 @@
+src/components/ai-bot/ReportArea.tsx
+  a97010b169ba442b 10501-10517 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a05bdbfa26691104a928d1b","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Range":[10501,10517]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "7ff6596c56085ebe94929632dbe6f97564c9ad76",
+  "prompts": {
+    "a97010b169ba442b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a058b2663c991a00c024aab",
+        "model": "Doubao-Seed-2.0-Code__dev"
+      },
+      "human_author": "Developer <user@example.com>",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 92,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {
+    "src/components/ai-bot/ReportArea.tsx": [
+      {
+        "hash": "a97010b169ba442b",
+        "line_ranges": [
+          {
+            "Range": [
+              10501,
+              10517
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a05bdbfa26691104a928d1b",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Range": [
+                  10501,
+                  10517
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "a97010b169ba442b": {
+      "tool": "trae",
+      "conversation_id": "6a058b2663c991a00c024aab",
+      "session_id": "6a058b2663c991a00c024aab",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
