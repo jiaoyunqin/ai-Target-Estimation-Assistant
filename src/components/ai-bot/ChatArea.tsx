@@ -927,7 +927,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
         {isPromotionAgent && (
           <div className="mt-4 flex items-center gap-2 px-1">
             <button
-              onClick={() => window.open('/target-explanation', '_blank')}
+              onClick={() => window.open(`/target-explanation?role=${role}`, '_blank')}
               className="flex items-center gap-1.5 px-3 py-2 bg-white border border-blue-200 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm"
             >
               <FileSearch className="w-3.5 h-3.5" />
