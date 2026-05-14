@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database, Workflow, Shield, Users, Check } from 'lucide-react';
+import { X, Share2, Download, BarChart2, Lightbulb, ArrowUpRight, ChevronDown, ChevronRight, ChevronLeft, AlertTriangle, AlertCircle, TrendingDown, Target, Settings, Zap, TrendingUp, DollarSign, Megaphone, Tv, FileText, Globe, ExternalLink, Clock, MessageSquare, MoreHorizontal, Send, PlayCircle, PlusCircle, HelpCircle, CheckCircle, CheckCircle2, ArrowRight, Search, Loader2, LayoutGrid, RefreshCw, Cloud, Upload, Lock, Copy, Link, Mail, Save, Database, Workflow, Shield, Users, Check, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, Area, AreaChart } from 'recharts';
 
 interface ReportAreaProps {
@@ -296,7 +296,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [selectedDimension, setSelectedDimension] = useState<'business' | 'play' | 'audience'>('business');
   const [showFeishuModal, setShowFeishuModal] = useState<{ show: boolean; ownerName: string; businessName: string; budget: string } | null>(null);
   const [promoView, setPromoView] = useState<'budget' | 'target' | 'monitor'>('budget');
-  const [targetTab, setTargetTab] = useState<'calculation' | 'reference' | 'logic'>('reference');
+  const [targetTab, setTargetTab] = useState<'calculation' | 'reference' | 'logic' | 'calibrate'>('reference');
   const [referenceSubTab, setReferenceSubTab] = useState<'history' | 'external'>('history');
   
   // 目标测算步骤管理 - 从step1开始，逐步执行
@@ -6917,6 +6917,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <Workflow className="w-4 h-4" />
                   测算逻辑
                 </button>
+                <button
+                  onClick={() => setTargetTab('calibrate')}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'calibrate' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Activity className="w-4 h-4" />
+                  促中校准
+                </button>
               </div>
               
               {/* 测算目标 Tab 内容 */}
@@ -12828,6 +12835,423 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               </div>
             </>
           )}
+
+              {/* 促中校准 Tab 内容 */}
+              {targetTab === 'calibrate' && (
+              <>
+                {/* 数据卡片区域 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 shadow-sm">
+                    <div className="text-xs text-gray-600 mb-1">支付GMV目标完成进度</div>
+                    <div className="text-xl font-bold text-blue-900">58%</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-gray-500">目标: 15,470万</span>
+                      <span className="text-xs text-green-600">已达: 8,973万</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200 shadow-sm">
+                    <div className="text-xs text-gray-600 mb-1">支付GMV预测最终达成</div>
+                    <div className="text-xl font-bold text-green-900">107%</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-green-600">预测: 16,553万</span>
+                      <span className="text-xs text-green-600">+7%</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm">
+                    <div className="text-xs text-gray-600 mb-1">发货GMV目标完成进度</div>
+                    <div className="text-xl font-bold text-purple-900">52%</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-gray-500">目标: 14,948万</span>
+                      <span className="text-xs text-green-600">已达: 7,773万</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200 shadow-sm">
+                    <div className="text-xs text-gray-600 mb-1">发货GMV预测最终达成</div>
+                    <div className="text-xl font-bold text-orange-900">102%</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-orange-600">预测: 15,247万</span>
+                      <span className="text-xs text-orange-600">+2%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 趋势图区域 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      目标达成趋势（目标 vs 实际 vs 预测）
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <select className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="payment">支付GMV</option>
+                        <option value="delivery">发货GMV</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={[
+                        { day: '06/15', target: 1200, actual: 1120, forecast: 1150 },
+                        { day: '06/16', target: 1800, actual: 1750, forecast: 1820 },
+                        { day: '06/17', target: 1500, actual: 1580, forecast: 1620 },
+                        { day: '06/18', target: 5000, actual: 4523, forecast: 4750 },
+                        { day: '06/19', target: 2800, actual: null, forecast: 2980 },
+                        { day: '06/20', target: 1700, actual: null, forecast: 1823 },
+                        { day: '合计', target: 14000, actual: 8973, forecast: 14973 }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} unit="万" />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="target" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="目标" />
+                        <Line type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="实际" connectNulls={false} />
+                        <Line type="monotone" dataKey="forecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="预测" />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 风险预警区域 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      风险预警
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="global">大盘</option>
+                        <option value="industry">行业</option>
+                      </select>
+                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="full">全周期</option>
+                        <option value="phase">分阶段</option>
+                      </select>
+                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="level1">一级</option>
+                        <option value="level2">二级</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="p-3 bg-red-50 rounded-lg border border-red-100 flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-red-800">美妆品类目标达成风险较高</div>
+                          <div className="text-xs text-red-600 mt-1">当前进度仅42%，低于同期50%的基准，需要重点关注</div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-red-200 text-red-800 text-xs rounded-full whitespace-nowrap">高风险</span>
+                    </div>
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-orange-800">食品快消爆发期目标达成可能偏低</div>
+                          <div className="text-xs text-orange-600 mt-1">预测爆发期完成度约92%，建议增加活动力度</div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-orange-200 text-orange-800 text-xs rounded-full whitespace-nowrap">中风险</span>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-100 flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-green-800">3C数码目标达成情况良好</div>
+                          <div className="text-xs text-green-600 mt-1">已完成61%，超预期完成</div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full whitespace-nowrap">正常</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-sm font-medium text-blue-800">AI 优化建议</div>
+                        <div className="text-xs text-blue-700 mt-1 leading-relaxed">
+                          建议将美妆品类剩余预算的20%调整至爆发期，并增加1场美妆品类日，预计可提升达成率8个百分点。
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 一级->二级子赛道目标达成明细 */}
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                      一级-&gt;二级子赛道目标达成明细
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        导出明细
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left py-2 px-4 font-medium text-gray-600 sticky left-0 bg-gray-50 z-10">赛道</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">目标GMV（万）</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">实际已达（万）</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">完成进度</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">预测最终（万）</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">预测达成率</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">风险等级</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {/* 3C数码 - 一级 */}
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">3C数码</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">4,100</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">2,501</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600 font-medium">61%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">4,346</td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">106%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+                        {/* 3C数码 - 二级 */}
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                            <span className="text-gray-400">↳</span> 手机
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">2,300</td>
+                          <td className="py-2 px-3 text-center text-gray-700">1,380</td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600">60%</span>
+                              </div>
+                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '60%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">2,438</td>
+                          <td className="py-2 px-3 text-center text-green-600">106%</td>
+                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                            <span className="text-gray-400">↳</span> 电脑整机
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">1,000</td>
+                          <td className="py-2 px-3 text-center text-gray-700">650</td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600">65%</span>
+                              </div>
+                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">1,070</td>
+                          <td className="py-2 px-3 text-center text-green-600">107%</td>
+                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                            <span className="text-gray-400">↳</span> 数码配件
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">800</td>
+                          <td className="py-2 px-3 text-center text-gray-700">471</td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600">59%</span>
+                              </div>
+                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '59%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">838</td>
+                          <td className="py-2 px-3 text-center text-green-600">105%</td>
+                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+
+                        {/* 美妆个护 - 一级 */}
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">美妆个护</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">3,570</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,499</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-red-600 font-medium">42%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-red-500 rounded-full" style={{ width: '42%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">3,499</td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
+                        </tr>
+                        {/* 美妆个护 - 二级 */}
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                            <span className="text-gray-400">↳</span> 护肤
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">2,200</td>
+                          <td className="py-2 px-3 text-center text-gray-700">902</td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-red-600">41%</span>
+                              </div>
+                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-red-500 rounded-full" style={{ width: '41%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">2,112</td>
+                          <td className="py-2 px-3 text-center text-orange-600">96%</td>
+                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                            <span className="text-gray-400">↳</span> 彩妆
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">1,370</td>
+                          <td className="py-2 px-3 text-center text-gray-700">597</td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-orange-600">44%</span>
+                              </div>
+                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '44%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-700">1,387</td>
+                          <td className="py-2 px-3 text-center text-orange-600">101%</td>
+                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                        </tr>
+
+                        {/* 其他行业 - 简化展示 */}
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">家电</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">3,280</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,706</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-orange-600 font-medium">52%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">3,214</td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">服饰</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">2,728</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,609</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600 font-medium">59%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '59%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">2,837</td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">104%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">食品快消</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,700</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">884</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-orange-600 font-medium">52%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">1,632</td>
+                          <td className="py-3 px-3 text-center font-medium text-orange-600">96%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">其他</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,100</td>
+                          <td className="py-3 px-3 text-center font-medium text-gray-900">674</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600 font-medium">61%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">1,133</td>
+                          <td className="py-3 px-3 text-center font-medium text-green-600">103%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+
+                        {/* 大盘总计 */}
+                        <tr className="bg-blue-50">
+                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10">大盘总计</td>
+                          <td className="py-3 px-3 text-center font-bold text-gray-900">16,378</td>
+                          <td className="py-3 px-3 text-center font-bold text-gray-900">8,873</td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600 font-bold">54%</span>
+                              </div>
+                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: '54%' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-bold text-green-600">16,661</td>
+                          <td className="py-3 px-3 text-center font-bold text-green-600">102%</td>
+                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+              )}
         </div>
       </div>
     );
