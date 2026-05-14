@@ -8770,8 +8770,9 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       {/* 锁定后的提示 */}
                       {allStepsLocked && (
                         <div className="bg-green-50 border-t border-green-200 p-4 -mx-6 -mb-6 rounded-b-xl">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
                             <span className="text-sm font-medium text-green-800">全链路目标已锁定，您可点击右上角“分享”按钮，导出报告或直接分享此测算链接。</span>
                           </div>
                         </div>
@@ -9555,12 +9556,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${resultTableTab === 'dailyDetail' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                       >
                         行业分日预测明细
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors">
-                        <Download className="w-3 h-3" />
-                        📥 导出明细数据
                       </button>
                     </div>
                   </div>
