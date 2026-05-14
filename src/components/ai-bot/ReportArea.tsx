@@ -396,12 +396,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
 
   // 3C行业趋势图数据
   const trendChartData = [
-    { date: '10/31', total: 2187, phone: 1100, computer: 700, accessory: 387, growth: '+12%', factor: '预售首日流量红利' },
-    { date: '11/01', total: 2721, phone: 1500, computer: 800, accessory: 421, growth: '+18%', factor: '3C品类日中场带动' },
-    { date: '11/10', total: 1500, phone: 800, computer: 450, accessory: 250, growth: '+10%', factor: '第二波预售预热' },
-    { date: '11/11', total: 6163, phone: 3500, computer: 2000, accessory: 663, growth: '+21%', factor: '全品类爆发日' },
-    { date: '11/12', total: 1300, phone: 700, computer: 400, accessory: 200, growth: '+8%', factor: '3C专属返场补贴' },
-    { date: '其他日期', total: 1077, phone: 574, computer: 334, accessory: 169, growth: '+5%', factor: '日常售卖' },
+    { date: '06/15', total: 587, phone: 290, computer: 185, accessory: 112, growth: '+12%', factor: '预热期首日' },
+    { date: '06/16', total: 721, phone: 380, computer: 225, accessory: 116, growth: '+18%', factor: '3C品类日' },
+    { date: '06/17', total: 500, phone: 260, computer: 150, accessory: 90, growth: '+10%', factor: '预热期第三天' },
+    { date: '06/18', total: 1863, phone: 960, computer: 590, accessory: 313, growth: '+21%', factor: '618爆发日' },
+    { date: '06/19', total: 750, phone: 400, computer: 230, accessory: 120, growth: '+8%', factor: '返场期首日' },
+    { date: '06/20', total: 527, phone: 284, computer: 164, accessory: 79, growth: '+5%', factor: '返场期第二天' },
   ];
 
   // 3C行业饼图数据
@@ -6811,7 +6811,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <div className="text-2xl">🏭</div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">{industryContext?.industry}行业发货GMV分日预测</h2>
-                        <p className="text-sm text-gray-500 mt-1">大促周期：2026.10.20-2026.11.11 | 所属行业：{industryContext?.industry}</p>
+                        <p className="text-sm text-gray-500 mt-1">大促周期：2026.06.15-2026.06.20 | 所属行业：{industryContext?.industry}</p>
                       </div>
                     </div>
                   </div>
@@ -7102,127 +7102,398 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       </div>
                     </div>
                     
-                    {/* 第四部分：底部数据表格 */}
+                    {/* 第四部分：底部数据表格 - 行业联动表格 */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                      {/* Tab 切换 */}
-                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-6">
-                        <button
-                          onClick={() => setBusinessLeaderTab('full')}
-                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'full' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                          3C全阶段
-                        </button>
-                        <button
-                          onClick={() => setBusinessLeaderTab('detail')}
-                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'detail' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                          二级行业明细
-                        </button>
-                        <button
-                          onClick={() => setBusinessLeaderTab('daily')}
-                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                          分日预测明细
-                        </button>
-                        <button
-                          onClick={() => setBusinessLeaderTab('session')}
-                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${businessLeaderTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                          场次效果
-                        </button>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          📦 3C数码行业发货GMV预测明细
+                        </h3>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                            <button
+                              onClick={() => setTableDisplayMode('daily')}
+                              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                tableDisplayMode === 'daily' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                              }`}
+                            >
+                              分日视图
+                            </button>
+                            <button
+                              onClick={() => setTableDisplayMode('phase')}
+                              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                tableDisplayMode === 'phase' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                              }`}
+                            >
+                              按阶段汇总
+                            </button>
+                          </div>
+                          <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                              <polyline points="17 8 12 3 7 8"></polyline>
+                              <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            导出明细
+                          </button>
+                        </div>
                       </div>
-                      
-                      {/* 分日预测明细 */}
-                      {businessLeaderTab === 'daily' && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="bg-gray-50">
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">阶段</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">3C发货GMV（万）</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">占全周期比例</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同比增速</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">影响因素</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">10/31</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">预售期</td>
-                                <td className="px-4 py-3 text-gray-700">2,187</td>
-                                <td className="px-4 py-3 text-gray-600">14.6%</td>
-                                <td className="px-4 py-3 text-green-600">+12%</td>
-                                <td className="px-4 py-3 text-gray-600">预售首日流量红利</td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">11/01</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">预热期</td>
-                                <td className="px-4 py-3 text-gray-700">2,721</td>
-                                <td className="px-4 py-3 text-gray-600">18.2%</td>
-                                <td className="px-4 py-3 text-green-600">+18%</td>
-                                <td className="px-4 py-3 text-gray-600">3C品类日中场带动</td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">11/10</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">预售期</td>
-                                <td className="px-4 py-3 text-gray-700">1,500</td>
-                                <td className="px-4 py-3 text-gray-600">10%</td>
-                                <td className="px-4 py-3 text-green-600">+10%</td>
-                                <td className="px-4 py-3 text-gray-600">第二波预售预热</td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">11/11</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">爆发期</td>
-                                <td className="px-4 py-3 text-gray-700">6,163</td>
-                                <td className="px-4 py-3 text-gray-600">41.2%</td>
-                                <td className="px-4 py-3 text-green-600">+21%</td>
-                                <td className="px-4 py-3 text-gray-600">全品类大场+3C专属补贴</td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">11/12</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">返场期</td>
-                                <td className="px-4 py-3 text-gray-700">1,300</td>
-                                <td className="px-4 py-3 text-gray-600">8.7%</td>
-                                <td className="px-4 py-3 text-green-600">+8%</td>
-                                <td className="px-4 py-3 text-gray-600">3C专属返场补贴</td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-gray-700">其他日期</td>
-                                <td className="px-4 py-3 text-gray-900 font-medium">平销期</td>
-                                <td className="px-4 py-3 text-gray-700">1,077</td>
-                                <td className="px-4 py-3 text-gray-600">7.2%</td>
-                                <td className="px-4 py-3 text-green-600">+5%</td>
-                                <td className="px-4 py-3 text-gray-600">日常售卖</td>
-                              </tr>
-                              <tr className="bg-blue-50">
-                                <td className="px-4 py-3 text-gray-900 font-bold">合计</td>
-                                <td className="px-4 py-3 text-gray-900">-</td>
-                                <td className="px-4 py-3 text-gray-900 font-bold">14,948</td>
-                                <td className="px-4 py-3 text-gray-900 font-bold">100%</td>
-                                <td className="px-4 py-3 text-green-700 font-bold">+14%</td>
-                                <td className="px-4 py-3 text-gray-700">与资管下发目标完全对齐</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                      
-                      {/* 其他Tab内容（占位） */}
-                      {businessLeaderTab !== 'daily' && (
-                        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                          {businessLeaderTab === 'full' ? '3C全阶段数据' : 
-                           businessLeaderTab === 'detail' ? '二级行业明细数据' : 
-                           '场次效果数据'}
-                        </div>
-                      )}
-                      
-                      {/* 导出按钮 */}
-                      <div className="mt-4 flex justify-end">
-                        <button className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                          <Database className="w-4 h-4" />
-                          导出行业数据明细
-                        </button>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          {/* 分日视图 */}
+                          {tableDisplayMode === 'daily' && (
+                            <>
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="text-left py-3 px-4 font-medium text-gray-600">层级/赛道名称</th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/15</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/16</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/17</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">预热期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/18</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-xs">爆发期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/19</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>06/20</div>
+                                    <div className="text-xs mt-0.5"><span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">返场期</span></div>
+                                    <div className="text-xs text-gray-400 mt-0.5">预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-2 font-medium text-gray-600">
+                                    <div>全周期合计</div>
+                                    <div className="text-xs text-gray-400 mt-1">预测</div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {/* 3C数码 */}
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 font-medium text-gray-900">
+                                    <span className="text-blue-500">▶</span> 3C数码
+                                  </td>
+                                  <td className="py-2 px-2 text-center text-gray-700">587</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">721</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">500</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">1,863</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">750</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">527</td>
+                                  <td className="py-2 px-2 text-center bg-blue-50 font-bold text-gray-900">4,948</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 手机
+                                  </td>
+                                  <td className="py-2 px-2 text-center text-gray-700">290</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">380</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">260</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">960</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">400</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">284</td>
+                                  <td className="py-2 px-2 text-center font-medium text-gray-700">2,574</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 电脑整机
+                                  </td>
+                                  <td className="py-2 px-2 text-center text-gray-700">185</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">225</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">150</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">590</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">230</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">164</td>
+                                  <td className="py-2 px-2 text-center font-medium text-gray-700">1,544</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 数码配件
+                                  </td>
+                                  <td className="py-2 px-2 text-center text-gray-700">112</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">116</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">90</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">313</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">120</td>
+                                  <td className="py-2 px-2 text-center text-gray-700">79</td>
+                                  <td className="py-2 px-2 text-center font-medium text-gray-700">830</td>
+                                </tr>
+                              </tbody>
+                            </>
+                          )}
+
+                          {/* 按阶段汇总视图 */}
+                          {tableDisplayMode === 'phase' && (
+                            <>
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="text-left py-3 px-4 font-medium text-gray-600">层级/赛道名称</th>
+                                  <th className="text-center py-3 px-3 font-medium text-gray-600">
+                                    <div>预热期（06/15-06/17）</div>
+                                    <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-3 font-medium text-gray-600">
+                                    <div>爆发期（06/18）</div>
+                                    <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-3 font-medium text-gray-600">
+                                    <div>返场期（06/19-06/20）</div>
+                                    <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                                  </th>
+                                  <th className="text-center py-3 px-3 font-medium text-gray-600">
+                                    <div>全周期合计</div>
+                                    <div className="text-xs text-gray-400 mt-1">目标 / 预测</div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {/* 3C数码 */}
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 font-medium text-gray-900">
+                                    <span className="text-blue-500">▶</span> 3C数码
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">1,750</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>1,808</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">1,720</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>1,863</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">1,290</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#FF7D00' }}>1,277</span>
+                                        <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center bg-blue-50">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1 font-bold">
+                                        <span className="text-gray-900">4,760</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>4,948</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 手机
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">910</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>930</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">900</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>960</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">680</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#9CA3AF' }}>684</span>
+                                        <span style={{ color: '#9CA3AF', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#9CA3AF' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <span className="text-gray-700">2,490</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>2,574</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 电脑整机
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">540</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>560</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">550</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>590</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">400</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#FF7D00' }}>394</span>
+                                        <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '99%', backgroundColor: '#FF7D00' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <span className="text-gray-700">1,490</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>1,544</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-2 px-4 pl-6 text-gray-700">
+                                    <span className="text-gray-400">↳</span> 数码配件
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">300</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>318</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">270</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>313</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-gray-700">210</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#FF7D00' }}>199</span>
+                                        <span style={{ color: '#FF7D00', fontSize: '10px' }}>↓</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '95%', backgroundColor: '#FF7D00' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <span className="text-gray-700">780</span>
+                                        <span className="text-gray-400">/</span>
+                                        <span style={{ color: '#00B42A' }}>830</span>
+                                        <span style={{ color: '#00B42A', fontSize: '10px' }}>↑</span>
+                                      </div>
+                                      <div className="w-4/5 h-0.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: '#00B42A' }}></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </>
+                          )}
+                        </table>
                       </div>
                     </div>
                   </div>
