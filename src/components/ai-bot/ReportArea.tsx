@@ -10517,7 +10517,24 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} unit="万" />
+                                {/* 左侧Y轴（主Y轴）：用于子类目数据 */}
+                                <YAxis 
+                                  yAxisId="left"
+                                  tick={{ fontSize: 11 }} 
+                                  unit="万"
+                                  orientation="left"
+                                />
+                                {/* 右侧Y轴（次Y轴）：仅用于大盘总计数据 */}
+                                {selectedDashboardIndustry === 'total' && (
+                                  <YAxis 
+                                    yAxisId="right"
+                                    tick={{ fontSize: 11 }} 
+                                    unit="万"
+                                    orientation="right"
+                                    axisLine={false}
+                                    tickLine={false}
+                                  />
+                                )}
                                 <Tooltip
                                   content={({ active, payload, label }) => {
                                     if (active && payload && payload.length) {
@@ -10539,40 +10556,44 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   }}
                                 />
                                 <Legend iconType="line" wrapperStyle={{ fontSize: '11px' }} />
-                                {/* 大盘视角：大盘总计显示为面积图 */}
+                                {/* 大盘视角：大盘总计显示为虚线折线，绑定到右侧Y轴 */}
                                 {selectedDashboardIndustry === 'total' && (
-                                  <Area
+                                  <Line
+                                    yAxisId="right"
                                     type="monotone"
                                     dataKey="大盘总计"
                                     stroke="#F97316"
-                                    fill="#FEF3C7"
-                                    fillOpacity={0.5}
-                                    strokeWidth={3}
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
                                     name="大盘总计"
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 3 }}
+                                    dot={{ r: 3, strokeWidth: 1, fill: '#fff' }}
+                                    activeDot={{ r: 5, strokeWidth: 2 }}
+                                    opacity={0.7}
                                   />
                                 )}
-                                {/* 所有系列显示为折线 */}
-                                {dashboardMockData[selectedDashboardIndustry]?.series.map((series) => (
-                                  <Line 
-                                    key={series.name}
-                                    type="monotone" 
-                                    dataKey={series.name} 
-                                    stroke={series.color}
-                                    strokeWidth={series.isMain ? 3 : 1.5}
-                                    strokeDasharray={series.isReference ? '5 5' : (series.isMain ? undefined : '5 5')}
-                                    dot={{ 
-                                      r: series.isMain ? 4 : (series.isReference ? 0 : 2), 
-                                      strokeWidth: series.isMain ? 2 : 1,
-                                      fill: '#fff',
-                                      cursor: 'pointer'
-                                    }} 
-                                    activeDot={{ r: 6, strokeWidth: 3 }}
-                                    name={series.name}
-                                    opacity={series.isReference ? 0.4 : 1}
-                                  />
-                                ))}
+                                {/* 所有系列显示为折线，绑定到左侧Y轴（排除大盘总计） */}
+                                {dashboardMockData[selectedDashboardIndustry]?.series
+                                  .filter(series => series.name !== '大盘总计')
+                                  .map((series) => (
+                                    <Line 
+                                      yAxisId="left"
+                                      key={series.name}
+                                      type="monotone" 
+                                      dataKey={series.name} 
+                                      stroke={series.color}
+                                      strokeWidth={series.isMain ? 3 : 1.5}
+                                      strokeDasharray={series.isReference ? '5 5' : undefined}
+                                      dot={{ 
+                                        r: series.isMain ? 4 : (series.isReference ? 0 : 2), 
+                                        strokeWidth: series.isMain ? 2 : 1,
+                                        fill: '#fff',
+                                        cursor: 'pointer'
+                                      }} 
+                                      activeDot={{ r: 6, strokeWidth: 3 }}
+                                      name={series.name}
+                                      opacity={series.isReference ? 0.4 : 1}
+                                    />
+                                  ))}
                               </ComposedChart>
                           </ResponsiveContainer>
                         </div>
