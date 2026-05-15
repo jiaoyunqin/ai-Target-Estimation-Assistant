@@ -401,6 +401,8 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [selectedTrack, setSelectedTrack] = useState<'3c' | 'phone' | 'computer' | 'accessory'>('3c');
   // 业务Leader促中校准页面的hover状态
   const [calibrateHoveredDate, setCalibrateHoveredDate] = useState<string | null>(null);
+  // 业务Leader测算目标页面的hover状态
+  const [calculationHoveredDate, setCalculationHoveredDate] = useState<string | null>(null);
   
   // 业务Leader促中校准页面的每日细分数据
   const calibrateDailyBreakdown: any = {
@@ -463,6 +465,71 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const getCalibrateTotalGmv = () => {
     if (calibrateHoveredDate && calibrateDailyBreakdown[calibrateHoveredDate]) {
       return calibrateDailyBreakdown[calibrateHoveredDate].reduce((sum: number, item: any) => sum + item.value, 0);
+    }
+    return 4948; // 全周期总GMV
+  };
+  
+  // 业务Leader测算目标页面的每日细分数据
+  const calculationDailyBreakdown: any = {
+    '06/15': [
+      { name: '手机', value: 290, ratio: '49%', color: '#3B82F6' },
+      { name: '电脑整机', value: 185, ratio: '32%', color: '#60A5FA' },
+      { name: '数码配件', value: 112, ratio: '19%', color: '#8B5CF6' }
+    ],
+    '06/16': [
+      { name: '手机', value: 380, ratio: '53%', color: '#3B82F6' },
+      { name: '电脑整机', value: 225, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 116, ratio: '16%', color: '#8B5CF6' }
+    ],
+    '06/17': [
+      { name: '手机', value: 260, ratio: '52%', color: '#3B82F6' },
+      { name: '电脑整机', value: 150, ratio: '30%', color: '#60A5FA' },
+      { name: '数码配件', value: 90, ratio: '18%', color: '#8B5CF6' }
+    ],
+    '06/18': [
+      { name: '手机', value: 960, ratio: '52%', color: '#3B82F6' },
+      { name: '电脑整机', value: 590, ratio: '32%', color: '#60A5FA' },
+      { name: '数码配件', value: 313, ratio: '17%', color: '#8B5CF6' }
+    ],
+    '06/19': [
+      { name: '手机', value: 400, ratio: '53%', color: '#3B82F6' },
+      { name: '电脑整机', value: 230, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 120, ratio: '16%', color: '#8B5CF6' }
+    ],
+    '06/20': [
+      { name: '手机', value: 284, ratio: '54%', color: '#3B82F6' },
+      { name: '电脑整机', value: 164, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 73, ratio: '14%', color: '#8B5CF6' }
+    ]
+  };
+  
+  // 业务Leader测算目标页面的全周期数据
+  const calculationFullCycleData = [
+    { name: '手机', value: 2574, ratio: '52%', color: '#3B82F6' },
+    { name: '电脑整机', value: 1544, ratio: '31%', color: '#60A5FA' },
+    { name: '数码配件', value: 830, ratio: '17%', color: '#8B5CF6' }
+  ];
+  
+  // 获取业务Leader测算目标页面的饼图数据
+  const getCalculationPieData = () => {
+    if (calculationHoveredDate && calculationDailyBreakdown[calculationHoveredDate]) {
+      return calculationDailyBreakdown[calculationHoveredDate];
+    }
+    return calculationFullCycleData;
+  };
+  
+  // 获取业务Leader测算目标页面的标题
+  const getCalculationPieTitle = () => {
+    if (calculationHoveredDate) {
+      return `${calculationHoveredDate} 3C数码子赛道结构`;
+    }
+    return '全周期 3C数码子赛道结构';
+  };
+  
+  // 获取业务Leader测算目标页面的总GMV
+  const getCalculationTotalGmv = () => {
+    if (calculationHoveredDate && calculationDailyBreakdown[calculationHoveredDate]) {
+      return calculationDailyBreakdown[calculationHoveredDate].reduce((sum: number, item: any) => sum + item.value, 0);
     }
     return 4948; // 全周期总GMV
   };
@@ -7385,17 +7452,28 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     
                     {/* 第三部分：趋势图+行业结构 */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-sm font-medium text-gray-700">3C发货GMV分日趋势图</span>
-                            <select className="px-3 py-1 border border-gray-300 rounded-lg text-sm bg-white">
-                              <option>3C数码</option>
-                            </select>
-                          </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          3C发货GMV分日趋势图
+                        </h3>
+                        <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
+                      </div>
+                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        {/* 左侧趋势图 */}
+                        <div className="xl:col-span-2">
                           <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={trendChartData}>
+                              <LineChart 
+                                data={trendChartData}
+                                onMouseMove={(data: any) => {
+                                  console.log('Mouse move data:', data);
+                                  if (data && data.activeLabel && data.activeLabel !== '合计') {
+                                    setCalculationHoveredDate(data.activeLabel);
+                                  }
+                                }}
+                                onMouseLeave={() => setCalculationHoveredDate(null)}
+                              >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                                 <YAxis tick={{ fontSize: 12 }} unit="万" domain={[0, 7000]} />
@@ -7428,6 +7506,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                   stroke="#2563EB" 
                                   strokeWidth={3} 
                                   dot={{ r: 4, fill: '#2563EB' }} 
+                                  activeDot={{ r: 6, strokeWidth: 3 }} 
                                   name="3C数码总计"
                                 />
                                 <Line 
@@ -7461,38 +7540,79 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             </ResponsiveContainer>
                           </div>
                         </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-700 mb-4">全周期3C数码子赛道结构</div>
-                          <div className="h-48">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={pieChartData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={50}
-                                  outerRadius={75}
-                                  paddingAngle={5}
-                                  dataKey="value"
+                        {/* 右侧饼图和明细数据 */}
+                        <div className="xl:col-span-1">
+                          <div 
+                            className="bg-gray-50 rounded-lg p-4 h-full transition-all duration-300"
+                            key={calculationHoveredDate || 'default'}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-bold text-xs text-gray-800">{getCalculationPieTitle()}</h4>
+                              {calculationHoveredDate && (
+                                <button 
+                                  onClick={() => setCalculationHoveredDate(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
                                 >
-                                  {pieChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  重置
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-4">
+                              {/* 饼图 - 圆环图效果 */}
+                              <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <PieChart>
+                                    <Pie
+                                      data={getCalculationPieData()}
+                                      cx="50%"
+                                      cy="50%"
+                                      innerRadius={50}
+                                      outerRadius={75}
+                                      paddingAngle={5}
+                                      dataKey="value"
+                                    >
+                                      {getCalculationPieData().map((entry: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                      ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => `${value.toLocaleString()}万`} />
+                                    <Legend formatter={(value, entry, index) => {
+                                      const data = getCalculationPieData()[index as number];
+                                      return (
+                                        <span style={{ fontSize: '10px' }}>
+                                          {value} ({data.ratio})
+                                        </span>
+                                      );
+                                    }} />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              </div>
+                              
+                              {/* 总GMV显示 */}
+                              <div className="text-center p-2 bg-white rounded-lg">
+                                <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
+                                <p className="text-lg font-bold text-gray-900">{getCalculationTotalGmv().toLocaleString()}万</p>
+                              </div>
+                              
+                              {/* 明细数据列表 */}
+                              <div>
+                                <p className="text-xs text-gray-600 mb-2">赛道明细：</p>
+                                <div className="space-y-2">
+                                  {getCalculationPieData().map((item: any, index: number) => (
+                                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors">
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                        <span className="text-xs font-medium text-gray-800">{item.name}</span>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-xs font-bold text-gray-900">{item.value.toLocaleString()}万</span>
+                                        <span className="text-xs text-gray-500 ml-2">({item.ratio})</span>
+                                      </div>
+                                    </div>
                                   ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => `${value.toLocaleString()}万`} />
-                                <Legend formatter={(value, entry, index) => {
-                                  const data = pieChartData[index];
-                                  return (
-                                    <span style={{ fontSize: '12px' }}>
-                                      {value} ({data.ratio})
-                                    </span>
-                                  );
-                                }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="mt-4 text-center">
-                            <div className="text-lg font-bold text-gray-800">总发货GMV：14,948万</div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -13217,146 +13337,57 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                           3C数码二级赛道发货GMV趋势
                         </h3>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
-                          {/* 赛道选择下拉框 */}
-                          <select 
-                            value={selectedTrack}
-                            onChange={(e) => setSelectedTrack(e.target.value as any)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="3c">3C数码</option>
-                            <option value="phone">手机</option>
-                            <option value="computer">电脑整机</option>
-                            <option value="accessory">数码配件</option>
-                          </select>
-                        </div>
+                        {/* 赛道选择下拉框 */}
+                        <select 
+                          value={selectedTrack}
+                          onChange={(e) => setSelectedTrack(e.target.value as any)}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="3c">3C数码</option>
+                          <option value="phone">手机</option>
+                          <option value="computer">电脑整机</option>
+                          <option value="accessory">数码配件</option>
+                        </select>
                       </div>
-                      {/* 左右分栏布局 */}
-                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        {/* 左侧趋势图 */}
-                        <div className="xl:col-span-2">
-                          <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <ComposedChart 
-                                data={getCalibrateTrendData() as any}
-                                onMouseMove={(data: any) => {
-                                  console.log('Mouse move data:', data);
-                                  if (data && data.activeLabel && data.activeLabel !== '合计') {
-                                    setCalibrateHoveredDate(data.activeLabel);
-                                  }
-                                }}
-                                onMouseLeave={() => setCalibrateHoveredDate(null)}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} unit="万" />
-                                <Tooltip />
-                                <Legend />
-                                {/* 根据选择的赛道显示对应的三条线 */}
-                                {selectedTrack === '3c' && (
-                                  <>
-                                    <Line type="monotone" dataKey="c3cTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="3C数码-目标" />
-                                    <Line type="monotone" dataKey="c3cActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="3C数码-实际" connectNulls={false} />
-                                    <Line type="monotone" dataKey="c3cForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="3C数码-预测" />
-                                  </>
-                                )}
-                                {selectedTrack === 'phone' && (
-                                  <>
-                                    <Line type="monotone" dataKey="phoneTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="手机-目标" />
-                                    <Line type="monotone" dataKey="phoneActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="手机-实际" connectNulls={false} />
-                                    <Line type="monotone" dataKey="phoneForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="手机-预测" />
-                                  </>
-                                )}
-                                {selectedTrack === 'computer' && (
-                                  <>
-                                    <Line type="monotone" dataKey="computerTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="电脑整机-目标" />
-                                    <Line type="monotone" dataKey="computerActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="电脑整机-实际" connectNulls={false} />
-                                    <Line type="monotone" dataKey="computerForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="电脑整机-预测" />
-                                  </>
-                                )}
-                                {selectedTrack === 'accessory' && (
-                                  <>
-                                    <Line type="monotone" dataKey="accessoryTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="数码配件-目标" />
-                                    <Line type="monotone" dataKey="accessoryActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="数码配件-实际" connectNulls={false} />
-                                    <Line type="monotone" dataKey="accessoryForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="数码配件-预测" />
-                                  </>
-                                )}
-                              </ComposedChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                        {/* 右侧饼图和明细数据 */}
-                        <div className="xl:col-span-1">
-                          <div 
-                            className="bg-gray-50 rounded-lg p-4 h-full transition-all duration-300"
-                            key={calibrateHoveredDate || 'default'}
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-bold text-xs text-gray-800">{getCalibratePieTitle()}</h4>
-                              {calibrateHoveredDate && (
-                                <button 
-                                  onClick={() => setCalibrateHoveredDate(null)}
-                                  className="text-xs text-gray-500 hover:text-gray-700"
-                                >
-                                  重置
-                                </button>
-                              )}
-                            </div>
-                            {/* 饼图 */}
-                            <div className="h-48">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={getCalibratePieData()}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={75}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                  >
-                                    {getCalibratePieData().map((entry: any, index: number) => (
-                                      <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip formatter={(value) => `${value}万`} />
-                                  <Legend formatter={(value, entry, index) => {
-                                    const data = getCalibratePieData()[index as number];
-                                    return (
-                                      <span style={{ fontSize: '10px' }}>
-                                        {value} ({data.ratio})
-                                      </span>
-                                    );
-                                  }} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </div>
-                            {/* 总GMV显示 */}
-                            <div className="text-center mt-3 p-2 bg-white rounded-lg">
-                              <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
-                              <p className="text-lg font-bold text-gray-900">{getCalibrateTotalGmv()}万</p>
-                            </div>
-                            {/* 明细数据列表 */}
-                            <div className="mt-3">
-                              <p className="text-xs text-gray-600 mb-2">赛道明细：</p>
-                              <div className="space-y-2">
-                                {getCalibratePieData().map((item: any, index: number) => (
-                                  <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors">
-                                    <div className="flex items-center gap-2">
-                                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                                      <span className="text-xs font-medium text-gray-800">{item.name}</span>
-                                    </div>
-                                    <div className="text-right">
-                                      <span className="text-xs font-bold text-gray-900">{item.value.toLocaleString()}万</span>
-                                      <span className="text-xs text-gray-500 ml-2">({item.ratio})</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={getCalibrateTrendData() as any}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} unit="万" />
+                            <Tooltip />
+                            <Legend />
+                            {/* 根据选择的赛道显示对应的三条线 */}
+                            {selectedTrack === '3c' && (
+                              <>
+                                <Line type="monotone" dataKey="c3cTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="3C数码-目标" />
+                                <Line type="monotone" dataKey="c3cActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="3C数码-实际" connectNulls={false} />
+                                <Line type="monotone" dataKey="c3cForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="3C数码-预测" />
+                              </>
+                            )}
+                            {selectedTrack === 'phone' && (
+                              <>
+                                <Line type="monotone" dataKey="phoneTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="手机-目标" />
+                                <Line type="monotone" dataKey="phoneActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="手机-实际" connectNulls={false} />
+                                <Line type="monotone" dataKey="phoneForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="手机-预测" />
+                              </>
+                            )}
+                            {selectedTrack === 'computer' && (
+                              <>
+                                <Line type="monotone" dataKey="computerTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="电脑整机-目标" />
+                                <Line type="monotone" dataKey="computerActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="电脑整机-实际" connectNulls={false} />
+                                <Line type="monotone" dataKey="computerForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="电脑整机-预测" />
+                              </>
+                            )}
+                            {selectedTrack === 'accessory' && (
+                              <>
+                                <Line type="monotone" dataKey="accessoryTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="数码配件-目标" />
+                                <Line type="monotone" dataKey="accessoryActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="数码配件-实际" connectNulls={false} />
+                                <Line type="monotone" dataKey="accessoryForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="数码配件-预测" />
+                              </>
+                            )}
+                          </ComposedChart>
+                        </ResponsiveContainer>
                       </div>
                     </>
                   ) : (
