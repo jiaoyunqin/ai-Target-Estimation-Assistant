@@ -12894,66 +12894,15 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               {/* 促中校准 Tab 内容 */}
               {targetTab === 'calibrate' && (
               <>
-                {/* 筛选区域 */}
-                <div className="flex items-center gap-4 mb-4">
-                  {/* 行业下拉多选框 */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
-                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
-                    >
-                      <span>行业选择: {calibrateSelectedIndustries.join(', ')}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    
-                    {showCalibrateIndustryDropdown && (
-                      <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
-                        <div className="p-2 max-h-[200 overflow-y-auto">
-                          <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={calibrateSelectedIndustries.includes('大盘')}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setCalibrateSelectedIndustries(['大盘']);
-                                } else {
-                                  setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
-                                }
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">大盘</span>
-                          </label>
-                          {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
-                            <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={calibrateSelectedIndustries.includes(industry)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
-                                    setCalibrateSelectedIndustries([...newSelected, industry]);
-                                  } else {
-                                    setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
-                                  }
-                                }}
-                                className="w-4 h-4"
-                              />
-                              <span className="text-sm">{industry}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* 数据卡片区域 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   {calibrateSelectedIndustries.includes('大盘') && (
                     <>
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 shadow-sm">
-                        <div className="text-xs text-gray-600 mb-1">支付GMV目标完成进度</div>
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          支付GMV目标完成进度
+                          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">大盘</span>
+                        </div>
                         <div className="text-xl font-bold text-blue-900">58%</div>
                         <div className="flex items-center gap-1 mt-1">
                           <span className="text-xs text-gray-500">目标: 15,470万</span>
@@ -12961,7 +12910,10 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </div>
                       </div>
                       <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200 shadow-sm">
-                        <div className="text-xs text-gray-600 mb-1">支付GMV预测最终达成</div>
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          支付GMV预测最终达成
+                          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">大盘</span>
+                        </div>
                         <div className="text-xl font-bold text-green-900">107%</div>
                         <div className="flex items-center gap-1 mt-1">
                           <span className="text-xs text-green-600">预测: 16,553万</span>
@@ -12971,7 +12923,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     </>
                   )}
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm">
-                    <div className="text-xs text-gray-600 mb-1">发货GMV目标完成进度</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                      发货GMV目标完成进度
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                        {calibrateSelectedIndustries.includes('大盘') ? '大盘' : calibrateSelectedIndustries[0]}
+                      </span>
+                    </div>
                     <div className="text-xl font-bold text-purple-900">{calibrateSelectedIndustries.includes('大盘') ? '52%' : '48%'}</div>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs text-gray-500">目标: {calibrateSelectedIndustries.includes('大盘') ? '14,948万' : '3,200万'}</span>
@@ -12979,7 +12936,12 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                     </div>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200 shadow-sm">
-                    <div className="text-xs text-gray-600 mb-1">发货GMV预测最终达成</div>
+                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                      发货GMV预测最终达成
+                      <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                        {calibrateSelectedIndustries.includes('大盘') ? '大盘' : calibrateSelectedIndustries[0]}
+                      </span>
+                    </div>
                     <div className="text-xl font-bold text-orange-900">{calibrateSelectedIndustries.includes('大盘') ? '102%' : '105%'}</div>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs text-orange-600">预测: {calibrateSelectedIndustries.includes('大盘') ? '15,247万' : '3,360万'}</span>
@@ -12996,6 +12958,56 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       目标达成趋势（目标 vs 实际 vs 预测）
                     </h3>
                     <div className="flex items-center gap-2">
+                      {/* 行业下拉多选框 */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
+                        >
+                          <span>行业: {calibrateSelectedIndustries.join(', ')}</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        
+                        {showCalibrateIndustryDropdown && (
+                          <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                            <div className="p-2 max-h-[200 overflow-y-auto">
+                              <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={calibrateSelectedIndustries.includes('大盘')}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setCalibrateSelectedIndustries(['大盘']);
+                                    } else {
+                                      setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
+                                    }
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm">大盘</span>
+                              </label>
+                              {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
+                                <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={calibrateSelectedIndustries.includes(industry)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
+                                        setCalibrateSelectedIndustries([...newSelected, industry]);
+                                      } else {
+                                        setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
+                                      }
+                                    }}
+                                    className="w-4 h-4"
+                                  />
+                                  <span className="text-sm">{industry}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <select 
                         value={calibrateGmvType}
                         onChange={(e) => setCalibrateGmvType(e.target.value as 'payment' | 'delivery')}
