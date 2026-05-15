@@ -504,7 +504,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, onSendMessage, onN
         )}
 
         {/* Promotion Budget Configuration Panel */}
-        {isPromotionAgent && (
+        {isPromotionAgent && role !== 'leader' && (
             <div className="sticky top-0 z-20 bg-[#f7f8fa] pb-4 w-full max-w-lg mx-auto space-y-3">
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <button 

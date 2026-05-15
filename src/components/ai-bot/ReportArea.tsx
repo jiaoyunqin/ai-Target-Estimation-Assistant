@@ -399,6 +399,73 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [calibrateGmvType, setCalibrateGmvType] = useState<'payment' | 'delivery'>(isBusinessLeader ? 'delivery' : 'payment');
   const [showCalibrateIndustryDropdown, setShowCalibrateIndustryDropdown] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<'3c' | 'phone' | 'computer' | 'accessory'>('3c');
+  // 业务Leader促中校准页面的hover状态
+  const [calibrateHoveredDate, setCalibrateHoveredDate] = useState<string | null>(null);
+  
+  // 业务Leader促中校准页面的每日细分数据
+  const calibrateDailyBreakdown: any = {
+    '06/15': [
+      { name: '手机', value: 290, ratio: '49%', color: '#3B82F6' },
+      { name: '电脑整机', value: 185, ratio: '32%', color: '#60A5FA' },
+      { name: '数码配件', value: 112, ratio: '19%', color: '#8B5CF6' }
+    ],
+    '06/16': [
+      { name: '手机', value: 380, ratio: '53%', color: '#3B82F6' },
+      { name: '电脑整机', value: 225, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 116, ratio: '16%', color: '#8B5CF6' }
+    ],
+    '06/17': [
+      { name: '手机', value: 260, ratio: '52%', color: '#3B82F6' },
+      { name: '电脑整机', value: 150, ratio: '30%', color: '#60A5FA' },
+      { name: '数码配件', value: 90, ratio: '18%', color: '#8B5CF6' }
+    ],
+    '06/18': [
+      { name: '手机', value: 960, ratio: '52%', color: '#3B82F6' },
+      { name: '电脑整机', value: 590, ratio: '32%', color: '#60A5FA' },
+      { name: '数码配件', value: 313, ratio: '17%', color: '#8B5CF6' }
+    ],
+    '06/19': [
+      { name: '手机', value: 400, ratio: '53%', color: '#3B82F6' },
+      { name: '电脑整机', value: 230, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 120, ratio: '16%', color: '#8B5CF6' }
+    ],
+    '06/20': [
+      { name: '手机', value: 284, ratio: '54%', color: '#3B82F6' },
+      { name: '电脑整机', value: 164, ratio: '31%', color: '#60A5FA' },
+      { name: '数码配件', value: 73, ratio: '14%', color: '#8B5CF6' }
+    ]
+  };
+  
+  // 业务Leader促中校准页面的全周期数据
+  const calibrateFullCycleData = [
+    { name: '手机', value: 2574, ratio: '52%', color: '#3B82F6' },
+    { name: '电脑整机', value: 1544, ratio: '31%', color: '#60A5FA' },
+    { name: '数码配件', value: 830, ratio: '17%', color: '#8B5CF6' }
+  ];
+  
+  // 获取业务Leader促中校准页面的饼图数据
+  const getCalibratePieData = () => {
+    if (calibrateHoveredDate && calibrateDailyBreakdown[calibrateHoveredDate]) {
+      return calibrateDailyBreakdown[calibrateHoveredDate];
+    }
+    return calibrateFullCycleData;
+  };
+  
+  // 获取业务Leader促中校准页面的标题
+  const getCalibratePieTitle = () => {
+    if (calibrateHoveredDate) {
+      return `${calibrateHoveredDate} 3C数码子赛道结构`;
+    }
+    return '全周期 3C数码子赛道结构';
+  };
+  
+  // 获取业务Leader促中校准页面的总GMV
+  const getCalibrateTotalGmv = () => {
+    if (calibrateHoveredDate && calibrateDailyBreakdown[calibrateHoveredDate]) {
+      return calibrateDailyBreakdown[calibrateHoveredDate].reduce((sum: number, item: any) => sum + item.value, 0);
+    }
+    return 4948; // 全周期总GMV
+  };
   
   // 为每个行业定义颜色方案
   const industryChartColors: any = {
@@ -2871,54 +2938,71 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     return (
       <div className="flex flex-col h-full bg-[#f8f9fc] border-l border-gray-200 shadow-xl w-full mx-auto overflow-hidden">
         {/* Top Nav */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm z-10 shrink-0">
-           <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center shadow-inner">
-                        <FileText className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900 leading-tight">平台用增 经营钱效简报</h2>
-                        
-                        {/* 时间筛选器 */}
-                        <div className="flex flex-wrap items-center gap-4 mt-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-500">统计周期：</span>
-                                <select className="bg-white border border-gray-200 rounded px-3 py-1 text-xs">
-                                    <option>最近自然周 (2026.03.16-2026.03.22)</option>
-                                    <option>近7天</option>
-                                    <option>近30天</option>
-                                    <option>本季度</option>
-                                    <option>自定义</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-500">对比周期：</span>
-                                <select className="bg-white border border-gray-200 rounded px-3 py-1 text-xs">
-                                    <option>上周自然周 (2026.03.09-2026.03.15)</option>
-                                    <option>上一周期</option>
-                                    <option>去年同期</option>
-                                    <option>自定义</option>
-                                </select>
-                            </div>
-                            <button className="bg-purple-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-purple-700 transition-colors">
-                                应用
-                            </button>
-                        </div>
-                    </div>
+        <div className="flex flex-col bg-white border-b border-gray-200 shadow-sm z-10 shrink-0">
+          <div className="flex items-center justify-between px-6 py-4">
+             <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center shadow-inner">
+                          <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                          <h2 className="text-lg font-bold text-gray-900 leading-tight">平台用增 经营钱效简报</h2>
+                          
+                          {/* 时间筛选器 */}
+                          <div className="flex flex-wrap items-center gap-4 mt-3">
+                              <div className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-gray-500">统计周期：</span>
+                                  <select className="bg-white border border-gray-200 rounded px-3 py-1 text-xs">
+                                      <option>最近自然周 (2026.03.16-2026.03.22)</option>
+                                      <option>近7天</option>
+                                      <option>近30天</option>
+                                      <option>本季度</option>
+                                      <option>自定义</option>
+                                  </select>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-gray-500">对比周期：</span>
+                                  <select className="bg-white border border-gray-200 rounded px-3 py-1 text-xs">
+                                      <option>上周自然周 (2026.03.09-2026.03.15)</option>
+                                      <option>上一周期</option>
+                                      <option>去年同期</option>
+                                      <option>自定义</option>
+                                  </select>
+                              </div>
+                              <button className="bg-purple-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-purple-700 transition-colors">
+                                  应用
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              
+              <div className="flex items-center gap-3">
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="分享">
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="下载">
+                  <Download className="w-5 h-5" />
+                </button>
+                <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+          </div>
+          
+          {/* 业务Leader专用提示卡片 */}
+          {isBusinessLeader && (
+            <div className="px-6 pb-4">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <Target className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                  <h3 className="font-bold text-blue-800 text-sm">2026年618大促目标</h3>
+                  <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                    3C数码
+                  </span>
                 </div>
-            
-            <div className="flex items-center gap-3">
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="分享">
-                <Share2 className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="下载">
-                <Download className="w-5 h-5" />
-              </button>
-              <div className="w-px h-6 bg-gray-200 mx-1"></div>
-              <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              </div>
             </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 lg:p-8">
@@ -6181,6 +6265,21 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
             </button>
           </div>
         </div>
+        
+        {/* 业务Leader专用提示卡片 */}
+        {isBusinessLeader && (
+          <div className="px-6 py-4 bg-white border-b border-gray-200">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <Target className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <h3 className="font-bold text-blue-800 text-sm">2026年618大促目标</h3>
+                <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                  3C数码
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* 版本控制条 */}
         <div className="flex items-center justify-between px-6 py-2 bg-gray-50 border-b border-gray-200">
@@ -13109,181 +13208,279 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   )}
                 </div>
 
-                {/* 趋势图区域 */}
+                {/* 趋势图区域 - 业务Leader模式时左右分栏 */}
                 <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      {isBusinessLeader ? '3C数码二级赛道发货GMV趋势' : '目标达成趋势（目标 vs 实际 vs 预测）'}
-                    </h3>
-                    {isBusinessLeader ? (
-                      <div className="flex items-center gap-2">
-                        {/* 赛道选择下拉框 */}
-                        <select 
-                          value={selectedTrack}
-                          onChange={(e) => setSelectedTrack(e.target.value as any)}
-                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="3c">3C数码</option>
-                          <option value="phone">手机</option>
-                          <option value="computer">电脑整机</option>
-                          <option value="accessory">数码配件</option>
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {/* 行业下拉多选框 */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
+                  {isBusinessLeader ? (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          3C数码二级赛道发货GMV趋势
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-gray-500">💡 鼠标Hover可联动饼图</p>
+                          {/* 赛道选择下拉框 */}
+                          <select 
+                            value={selectedTrack}
+                            onChange={(e) => setSelectedTrack(e.target.value as any)}
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <span>行业: {calibrateSelectedIndustries.join(', ')}</span>
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-                          
-                          {showCalibrateIndustryDropdown && (
-                            <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
-                              <div className="p-2 max-h-[200 overflow-y-auto">
-                                <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={calibrateSelectedIndustries.includes('大盘')}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setCalibrateSelectedIndustries(['大盘']);
-                                      } else {
-                                        setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
-                                      }
-                                    }}
-                                    className="w-4 h-4"
-                                  />
-                                  <span className="text-sm">大盘</span>
-                                </label>
-                                {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
-                                  <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                            <option value="3c">3C数码</option>
+                            <option value="phone">手机</option>
+                            <option value="computer">电脑整机</option>
+                            <option value="accessory">数码配件</option>
+                          </select>
+                        </div>
+                      </div>
+                      {/* 左右分栏布局 */}
+                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        {/* 左侧趋势图 */}
+                        <div className="xl:col-span-2">
+                          <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <ComposedChart 
+                                data={getCalibrateTrendData() as any}
+                                onMouseMove={(data: any) => {
+                                  console.log('Mouse move data:', data);
+                                  if (data && data.activeLabel && data.activeLabel !== '合计') {
+                                    setCalibrateHoveredDate(data.activeLabel);
+                                  }
+                                }}
+                                onMouseLeave={() => setCalibrateHoveredDate(null)}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                                <YAxis tick={{ fontSize: 11 }} unit="万" />
+                                <Tooltip />
+                                <Legend />
+                                {/* 根据选择的赛道显示对应的三条线 */}
+                                {selectedTrack === '3c' && (
+                                  <>
+                                    <Line type="monotone" dataKey="c3cTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="3C数码-目标" />
+                                    <Line type="monotone" dataKey="c3cActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="3C数码-实际" connectNulls={false} />
+                                    <Line type="monotone" dataKey="c3cForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="3C数码-预测" />
+                                  </>
+                                )}
+                                {selectedTrack === 'phone' && (
+                                  <>
+                                    <Line type="monotone" dataKey="phoneTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="手机-目标" />
+                                    <Line type="monotone" dataKey="phoneActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="手机-实际" connectNulls={false} />
+                                    <Line type="monotone" dataKey="phoneForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="手机-预测" />
+                                  </>
+                                )}
+                                {selectedTrack === 'computer' && (
+                                  <>
+                                    <Line type="monotone" dataKey="computerTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="电脑整机-目标" />
+                                    <Line type="monotone" dataKey="computerActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="电脑整机-实际" connectNulls={false} />
+                                    <Line type="monotone" dataKey="computerForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="电脑整机-预测" />
+                                  </>
+                                )}
+                                {selectedTrack === 'accessory' && (
+                                  <>
+                                    <Line type="monotone" dataKey="accessoryTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="数码配件-目标" />
+                                    <Line type="monotone" dataKey="accessoryActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6, strokeWidth: 3 }} name="数码配件-实际" connectNulls={false} />
+                                    <Line type="monotone" dataKey="accessoryForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="数码配件-预测" />
+                                  </>
+                                )}
+                              </ComposedChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        {/* 右侧饼图和明细数据 */}
+                        <div className="xl:col-span-1">
+                          <div 
+                            className="bg-gray-50 rounded-lg p-4 h-full transition-all duration-300"
+                            key={calibrateHoveredDate || 'default'}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-bold text-xs text-gray-800">{getCalibratePieTitle()}</h4>
+                              {calibrateHoveredDate && (
+                                <button 
+                                  onClick={() => setCalibrateHoveredDate(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  重置
+                                </button>
+                              )}
+                            </div>
+                            {/* 饼图 */}
+                            <div className="h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={getCalibratePieData()}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={75}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    {getCalibratePieData().map((entry: any, index: number) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={(value) => `${value}万`} />
+                                  <Legend formatter={(value, entry, index) => {
+                                    const data = getCalibratePieData()[index as number];
+                                    return (
+                                      <span style={{ fontSize: '10px' }}>
+                                        {value} ({data.ratio})
+                                      </span>
+                                    );
+                                  }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            {/* 总GMV显示 */}
+                            <div className="text-center mt-3 p-2 bg-white rounded-lg">
+                              <p className="text-xs text-gray-600 mb-1">总发货 GMV</p>
+                              <p className="text-lg font-bold text-gray-900">{getCalibrateTotalGmv()}万</p>
+                            </div>
+                            {/* 明细数据列表 */}
+                            <div className="mt-3">
+                              <p className="text-xs text-gray-600 mb-2">赛道明细：</p>
+                              <div className="space-y-2">
+                                {getCalibratePieData().map((item: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                      <span className="text-xs font-medium text-gray-800">{item.name}</span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-xs font-bold text-gray-900">{item.value.toLocaleString()}万</span>
+                                      <span className="text-xs text-gray-500 ml-2">({item.ratio})</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          目标达成趋势（目标 vs 实际 vs 预测）
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {/* 行业下拉多选框 */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
+                              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
+                            >
+                              <span>行业: {calibrateSelectedIndustries.join(', ')}</span>
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            
+                            {showCalibrateIndustryDropdown && (
+                              <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                                <div className="p-2 max-h-[200 overflow-y-auto">
+                                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
                                     <input
                                       type="checkbox"
-                                      checked={calibrateSelectedIndustries.includes(industry)}
+                                      checked={calibrateSelectedIndustries.includes('大盘')}
                                       onChange={(e) => {
                                         if (e.target.checked) {
-                                          const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
-                                          setCalibrateSelectedIndustries([...newSelected, industry]);
+                                          setCalibrateSelectedIndustries(['大盘']);
                                         } else {
-                                          setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
+                                          setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
                                         }
                                       }}
                                       className="w-4 h-4"
                                     />
-                                    <span className="text-sm">{industry}</span>
+                                    <span className="text-sm">大盘</span>
                                   </label>
-                                ))}
+                                  {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
+                                    <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={calibrateSelectedIndustries.includes(industry)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
+                                            setCalibrateSelectedIndustries([...newSelected, industry]);
+                                          } else {
+                                            setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
+                                          }
+                                        }}
+                                        className="w-4 h-4"
+                                      />
+                                      <span className="text-sm">{industry}</span>
+                                    </label>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
+                          <select 
+                            value={calibrateGmvType}
+                            onChange={(e) => setCalibrateGmvType(e.target.value as 'payment' | 'delivery')}
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={!calibrateSelectedIndustries.includes('大盘')}
+                          >
+                            <option value="payment" disabled={!calibrateSelectedIndustries.includes('大盘')}>支付GMV</option>
+                            <option value="delivery">发货GMV</option>
+                          </select>
                         </div>
-                        <select 
-                          value={calibrateGmvType}
-                          onChange={(e) => setCalibrateGmvType(e.target.value as 'payment' | 'delivery')}
-                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={!calibrateSelectedIndustries.includes('大盘')}
-                        >
-                          <option value="payment" disabled={!calibrateSelectedIndustries.includes('大盘')}>支付GMV</option>
-                          <option value="delivery">发货GMV</option>
-                        </select>
                       </div>
-                    )}
-                  </div>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      {isBusinessLeader ? (
-                        <ComposedChart data={getCalibrateTrendData() as any}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} unit="万" />
-                          <Tooltip />
-                          <Legend />
-                          {/* 根据选择的赛道显示对应的三条线 */}
-                          {selectedTrack === '3c' && (
-                            <>
-                              <Line type="monotone" dataKey="c3cTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="3C数码-目标" />
-                              <Line type="monotone" dataKey="c3cActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="3C数码-实际" connectNulls={false} />
-                              <Line type="monotone" dataKey="c3cForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="3C数码-预测" />
-                            </>
-                          )}
-                          {selectedTrack === 'phone' && (
-                            <>
-                              <Line type="monotone" dataKey="phoneTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="手机-目标" />
-                              <Line type="monotone" dataKey="phoneActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="手机-实际" connectNulls={false} />
-                              <Line type="monotone" dataKey="phoneForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="手机-预测" />
-                            </>
-                          )}
-                          {selectedTrack === 'computer' && (
-                            <>
-                              <Line type="monotone" dataKey="computerTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="电脑整机-目标" />
-                              <Line type="monotone" dataKey="computerActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="电脑整机-实际" connectNulls={false} />
-                              <Line type="monotone" dataKey="computerForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="电脑整机-预测" />
-                            </>
-                          )}
-                          {selectedTrack === 'accessory' && (
-                            <>
-                              <Line type="monotone" dataKey="accessoryTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="数码配件-目标" />
-                              <Line type="monotone" dataKey="accessoryActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="数码配件-实际" connectNulls={false} />
-                              <Line type="monotone" dataKey="accessoryForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="数码配件-预测" />
-                            </>
-                          )}
-                        </ComposedChart>
-                      ) : (
-                        <ComposedChart data={getCalibrateTrendData() as any}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} unit="万" />
-                          <Tooltip />
-                          <Legend />
-                          {/* 大盘模式 */}
-                          {calibrateSelectedIndustries.includes('大盘') && (
-                            <>
-                              <Line type="monotone" dataKey="globalTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="大盘-目标" />
-                              <Line type="monotone" dataKey="globalActual" stroke="#6B7280" strokeWidth={3} dot={{ r: 4 }} name="大盘-实际" connectNulls={false} />
-                              <Line type="monotone" dataKey="globalForecast" stroke="#4B5563" strokeWidth={2} strokeDasharray="3 3" dot={false} name="大盘-预测" />
-                            </>
-                          )}
-                          {/* 多行业模式 - 根据选中的行业动态渲染 */}
-                          {!calibrateSelectedIndustries.includes('大盘') && calibrateSelectedIndustries.map((industry) => (
-                            <React.Fragment key={industry}>
-                              <Line 
-                                type="monotone" 
-                                dataKey={`${industry}Target`} 
-                                stroke={industryChartColors[industry]?.target || '#9CA3AF'} 
-                                strokeWidth={2} 
-                                strokeDasharray="5 5" 
-                                dot={false} 
-                                name={`${industry}-目标`} 
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey={`${industry}Actual`} 
-                                stroke={industryChartColors[industry]?.actual || '#3B82F6'} 
-                                strokeWidth={3} 
-                                dot={{ r: 4 }} 
-                                name={`${industry}-实际`} 
-                                connectNulls={false} 
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey={`${industry}Forecast`} 
-                                stroke={industryChartColors[industry]?.forecast || '#10B981'} 
-                                strokeWidth={2} 
-                                strokeDasharray="3 3" 
-                                dot={false} 
-                                name={`${industry}-预测`} 
-                              />
-                            </React.Fragment>
-                          ))}
-                        </ComposedChart>
-                      )}
-                    </ResponsiveContainer>
-                  </div>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={getCalibrateTrendData() as any}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} unit="万" />
+                            <Tooltip />
+                            <Legend />
+                            {/* 大盘模式 */}
+                            {calibrateSelectedIndustries.includes('大盘') && (
+                              <>
+                                <Line type="monotone" dataKey="globalTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="大盘-目标" />
+                                <Line type="monotone" dataKey="globalActual" stroke="#6B7280" strokeWidth={3} dot={{ r: 4 }} name="大盘-实际" connectNulls={false} />
+                                <Line type="monotone" dataKey="globalForecast" stroke="#4B5563" strokeWidth={2} strokeDasharray="3 3" dot={false} name="大盘-预测" />
+                              </>
+                            )}
+                            {/* 多行业模式 - 根据选中的行业动态渲染 */}
+                            {!calibrateSelectedIndustries.includes('大盘') && calibrateSelectedIndustries.map((industry) => (
+                              <React.Fragment key={industry}>
+                                <Line 
+                                  type="monotone" 
+                                  dataKey={`${industry}Target`} 
+                                  stroke={industryChartColors[industry]?.target || '#9CA3AF'} 
+                                  strokeWidth={2} 
+                                  strokeDasharray="5 5" 
+                                  dot={false} 
+                                  name={`${industry}-目标`} 
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey={`${industry}Actual`} 
+                                  stroke={industryChartColors[industry]?.actual || '#3B82F6'} 
+                                  strokeWidth={3} 
+                                  dot={{ r: 4 }} 
+                                  name={`${industry}-实际`} 
+                                  connectNulls={false} 
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey={`${industry}Forecast`} 
+                                  stroke={industryChartColors[industry]?.forecast || '#10B981'} 
+                                  strokeWidth={2} 
+                                  strokeDasharray="3 3" 
+                                  dot={false} 
+                                  name={`${industry}-预测`} 
+                                />
+                              </React.Fragment>
+                            ))}
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* 风险预警区域 */}
