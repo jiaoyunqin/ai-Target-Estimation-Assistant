@@ -395,45 +395,170 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   const [businessLeaderTab, setBusinessLeaderTab] = useState<'full' | 'detail' | 'daily' | 'session'>('daily');
   
   // 促中校准状态
-  const [calibrateSelectedIndustries, setCalibrateSelectedIndustries] = useState<string[]>(['大盘']);
-  const [calibrateGmvType, setCalibrateGmvType] = useState<'payment' | 'delivery'>('payment');
+  const [calibrateSelectedIndustries, setCalibrateSelectedIndustries] = useState<string[]>(isBusinessLeader ? ['3C数码'] : ['大盘']);
+  const [calibrateGmvType, setCalibrateGmvType] = useState<'payment' | 'delivery'>(isBusinessLeader ? 'delivery' : 'payment');
   const [showCalibrateIndustryDropdown, setShowCalibrateIndustryDropdown] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<'3c' | 'phone' | 'computer' | 'accessory'>('3c');
+  
+  // 为每个行业定义颜色方案
+  const industryChartColors: any = {
+    '3C数码': { target: '#93C5FD', actual: '#3B82F6', forecast: '#60A5FA' },
+    '家电': { target: '#C4B5FD', actual: '#8B5CF6', forecast: '#A78BFA' },
+    '服饰': { target: '#FECACA', actual: '#EF4444', forecast: '#F87171' },
+    '食品快消': { target: '#FDE68A', actual: '#F59E0B', forecast: '#FBBF24' },
+    '美妆个护': { target: '#A7F3D0', actual: '#10B981', forecast: '#34D399' },
+    '其他': { target: '#E5E7EB', actual: '#6B7280', forecast: '#9CA3AF' }
+  };
   
   // 生成促中校准趋势图数据
   const getCalibrateTrendData = () => {
+    if (isBusinessLeader) {
+      // 业务Leader视角只显示3C数码及其二级赛道数据，每个赛道都有目标、实际、预测
+      return [
+        { 
+          day: '06/15', 
+          // 3C数码一级赛道
+          c3cTarget: 940, c3cActual: 587, c3cForecast: 645,
+          // 二级赛道
+          phoneTarget: 480, phoneActual: 290, phoneForecast: 320,
+          computerTarget: 280, computerActual: 185, computerForecast: 200,
+          accessoryTarget: 180, accessoryActual: 112, accessoryForecast: 125
+        },
+        { 
+          day: '06/16', 
+          c3cTarget: 1200, c3cActual: 721, c3cForecast: 770,
+          phoneTarget: 640, phoneActual: 380, phoneForecast: 400,
+          computerTarget: 360, computerActual: 225, computerForecast: 240,
+          accessoryTarget: 200, accessoryActual: 116, accessoryForecast: 130
+        },
+        { 
+          day: '06/17', 
+          c3cTarget: 940, c3cActual: 500, c3cForecast: 545,
+          phoneTarget: 520, phoneActual: 260, phoneForecast: 280,
+          computerTarget: 260, computerActual: 150, computerForecast: 165,
+          accessoryTarget: 160, accessoryActual: 90, accessoryForecast: 100
+        },
+        { 
+          day: '06/18', 
+          c3cTarget: 3100, c3cActual: 1863, c3cForecast: 3410,
+          phoneTarget: 1600, phoneActual: 960, phoneForecast: 1760,
+          computerTarget: 980, computerActual: 590, computerForecast: 1080,
+          accessoryTarget: 520, accessoryActual: 313, accessoryForecast: 570
+        },
+        { 
+          day: '06/19', 
+          c3cTarget: 1380, c3cActual: null, c3cForecast: 1510,
+          phoneTarget: 720, phoneActual: null, phoneForecast: 790,
+          computerTarget: 420, computerActual: null, computerForecast: 460,
+          accessoryTarget: 240, accessoryActual: null, accessoryForecast: 260
+        },
+        { 
+          day: '06/20', 
+          c3cTarget: 960, c3cActual: null, c3cForecast: 1055,
+          phoneTarget: 500, phoneActual: null, phoneForecast: 550,
+          computerTarget: 300, computerActual: null, computerForecast: 330,
+          accessoryTarget: 160, accessoryActual: null, accessoryForecast: 175
+        },
+        { 
+          day: '合计', 
+          c3cTarget: 8520, c3cActual: 3671, c3cForecast: 9435,
+          phoneTarget: 4460, phoneActual: 1890, phoneForecast: 4950,
+          computerTarget: 2600, computerActual: 1145, computerForecast: 2895,
+          accessoryTarget: 1460, accessoryActual: 631, accessoryForecast: 1590
+        }
+      ];
+    }
+    
     const isGlobal = calibrateSelectedIndustries.includes('大盘');
     const isPayment = calibrateGmvType === 'payment';
     
+    // 大盘数据
     if (isGlobal && isPayment) {
       return [
-        { day: '06/15', target: 1200, actual: 1120, forecast: 1150 },
-        { day: '06/16', target: 1800, actual: 1750, forecast: 1820 },
-        { day: '06/17', target: 1500, actual: 1580, forecast: 1620 },
-        { day: '06/18', target: 5000, actual: 4523, forecast: 4750 },
-        { day: '06/19', target: 2800, actual: null, forecast: 2980 },
-        { day: '06/20', target: 1700, actual: null, forecast: 1823 },
-        { day: '合计', target: 14000, actual: 8973, forecast: 14973 }
+        { day: '06/15', globalTarget: 1200, globalActual: 1120, globalForecast: 1150 },
+        { day: '06/16', globalTarget: 1800, globalActual: 1750, globalForecast: 1820 },
+        { day: '06/17', globalTarget: 1500, globalActual: 1580, globalForecast: 1620 },
+        { day: '06/18', globalTarget: 5000, globalActual: 4523, globalForecast: 4750 },
+        { day: '06/19', globalTarget: 2800, globalActual: null, globalForecast: 2980 },
+        { day: '06/20', globalTarget: 1700, globalActual: null, globalForecast: 1823 },
+        { day: '合计', globalTarget: 14000, globalActual: 8973, globalForecast: 14973 }
       ];
     } else if (isGlobal && !isPayment) {
       return [
-        { day: '06/15', target: 1100, actual: 1000, forecast: 1050 },
-        { day: '06/16', target: 1700, actual: 1620, forecast: 1680 },
-        { day: '06/17', target: 1400, actual: 1480, forecast: 1520 },
-        { day: '06/18', target: 4800, actual: 4300, forecast: 4520 },
-        { day: '06/19', target: 2700, actual: null, forecast: 2880 },
-        { day: '06/20', target: 1600, actual: null, forecast: 1720 },
-        { day: '合计', target: 13300, actual: 7773, forecast: 14143 }
+        { day: '06/15', globalTarget: 1100, globalActual: 1000, globalForecast: 1050 },
+        { day: '06/16', globalTarget: 1700, globalActual: 1620, globalForecast: 1680 },
+        { day: '06/17', globalTarget: 1400, globalActual: 1480, globalForecast: 1520 },
+        { day: '06/18', globalTarget: 4800, globalActual: 4300, globalForecast: 4520 },
+        { day: '06/19', globalTarget: 2700, globalActual: null, globalForecast: 2880 },
+        { day: '06/20', globalTarget: 1600, globalActual: null, globalForecast: 1720 },
+        { day: '合计', globalTarget: 13300, globalActual: 7773, globalForecast: 14143 }
       ];
     } else {
-      // 行业数据示例
+      // 多行业数据
       return [
-        { day: '06/15', target: 250, actual: 220, forecast: 230 },
-        { day: '06/16', target: 380, actual: 360, forecast: 390 },
-        { day: '06/17', target: 320, actual: 340, forecast: 350 },
-        { day: '06/18', target: 1200, actual: 1050, forecast: 1120 },
-        { day: '06/19', target: 600, actual: null, forecast: 680 },
-        { day: '06/20', target: 400, actual: null, forecast: 430 },
-        { day: '合计', target: 3150, actual: 1536, forecast: 3360 }
+        { 
+          day: '06/15', 
+          '3C数码Target': 480, '3C数码Actual': 290, '3C数码Forecast': 320,
+          '家电Target': 320, '家电Actual': 280, '家电Forecast': 290,
+          '服饰Target': 260, '服饰Actual': 220, '服饰Forecast': 235,
+          '食品快消Target': 200, '食品快消Actual': 180, '食品快消Forecast': 190,
+          '美妆个护Target': 180, '美妆个护Actual': 150, '美妆个护Forecast': 160,
+          '其他Target': 100, '其他Actual': 90, '其他Forecast': 95
+        },
+        { 
+          day: '06/16', 
+          '3C数码Target': 640, '3C数码Actual': 380, '3C数码Forecast': 400,
+          '家电Target': 400, '家电Actual': 350, '家电Forecast': 370,
+          '服饰Target': 320, '服饰Actual': 290, '服饰Forecast': 310,
+          '食品快消Target': 260, '食品快消Actual': 220, '食品快消Forecast': 235,
+          '美妆个护Target': 220, '美妆个护Actual': 180, '美妆个护Forecast': 195,
+          '其他Target': 120, '其他Actual': 100, '其他Forecast': 110
+        },
+        { 
+          day: '06/17', 
+          '3C数码Target': 520, '3C数码Actual': 260, '3C数码Forecast': 280,
+          '家电Target': 340, '家电Actual': 290, '家电Forecast': 305,
+          '服饰Target': 280, '服饰Actual': 240, '服饰Forecast': 255,
+          '食品快消Target': 220, '食品快消Actual': 190, '食品快消Forecast': 200,
+          '美妆个护Target': 180, '美妆个护Actual': 150, '美妆个护Forecast': 165,
+          '其他Target': 100, '其他Actual': 85, '其他Forecast': 90
+        },
+        { 
+          day: '06/18', 
+          '3C数码Target': 1600, '3C数码Actual': 960, '3C数码Forecast': 1760,
+          '家电Target': 1000, '家电Actual': 850, '家电Forecast': 1100,
+          '服饰Target': 800, '服饰Actual': 700, '服饰Forecast': 880,
+          '食品快消Target': 600, '食品快消Actual': 520, '食品快消Forecast': 660,
+          '美妆个护Target': 500, '美妆个护Actual': 430, '美妆个护Forecast': 550,
+          '其他Target': 280, '其他Actual': 240, '其他Forecast': 310
+        },
+        { 
+          day: '06/19', 
+          '3C数码Target': 720, '3C数码Actual': null, '3C数码Forecast': 790,
+          '家电Target': 450, '家电Actual': null, '家电Forecast': 490,
+          '服饰Target': 360, '服饰Actual': null, '服饰Forecast': 390,
+          '食品快消Target': 280, '食品快消Actual': null, '食品快消Forecast': 305,
+          '美妆个护Target': 240, '美妆个护Actual': null, '美妆个护Forecast': 260,
+          '其他Target': 130, '其他Actual': null, '其他Forecast': 145
+        },
+        { 
+          day: '06/20', 
+          '3C数码Target': 500, '3C数码Actual': null, '3C数码Forecast': 550,
+          '家电Target': 320, '家电Actual': null, '家电Forecast': 355,
+          '服饰Target': 260, '服饰Actual': null, '服饰Forecast': 285,
+          '食品快消Target': 200, '食品快消Actual': null, '食品快消Forecast': 220,
+          '美妆个护Target': 170, '美妆个护Actual': null, '美妆个护Forecast': 185,
+          '其他Target': 90, '其他Actual': null, '其他Forecast': 100
+        },
+        { 
+          day: '合计', 
+          '3C数码Target': 4460, '3C数码Actual': 1890, '3C数码Forecast': 4950,
+          '家电Target': 2830, '家电Actual': 1770, '家电Forecast': 3120,
+          '服饰Target': 2280, '服饰Actual': 1450, '服饰Forecast': 2555,
+          '食品快消Target': 1760, '食品快消Actual': 1110, '食品快消Forecast': 1910,
+          '美妆个护Target': 1490, '美妆个护Actual': 760, '美妆个护Forecast': 1615,
+          '其他Target': 720, '其他Actual': 515, '其他Forecast': 850
+        }
       ];
     }
   };
@@ -12883,10 +13008,59 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
               {/* 促中校准 Tab 内容 */}
               {targetTab === 'calibrate' && (
               <>
-                {/* 数据卡片区域 */}
+                {/* 数据卡片区域 - 业务Leader只显示3C数码相关 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  {calibrateSelectedIndustries.includes('大盘') && (
+                  {/* 业务Leader视角的数据卡片 - 3C数码发货GMV */}
+                  {isBusinessLeader ? (
                     <>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          手机发货GMV目标完成度
+                          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">3C数码</span>
+                        </div>
+                        <div className="text-xl font-bold text-blue-900">46%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-gray-500">目标: 1,600万</span>
+                          <span className="text-xs text-green-600">已达: 736万</span>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          电脑整机发货GMV目标完成度
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">3C数码</span>
+                        </div>
+                        <div className="text-xl font-bold text-purple-900">50%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-gray-500">目标: 960万</span>
+                          <span className="text-xs text-green-600">已达: 480万</span>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          数码配件发货GMV目标完成度
+                          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">3C数码</span>
+                        </div>
+                        <div className="text-xl font-bold text-green-900">52%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-gray-500">目标: 640万</span>
+                          <span className="text-xs text-green-600">已达: 333万</span>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          3C数码整体发货GMV预测达成
+                          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">3C数码</span>
+                        </div>
+                        <div className="text-xl font-bold text-orange-900">105%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-orange-600">预测: 3,360万</span>
+                          <span className="text-xs text-orange-600">+5%</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* 电商管理者视角的数据卡片 - 固定显示大盘 */}
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 shadow-sm">
                         <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
                           支付GMV目标完成进度
@@ -12909,34 +13083,30 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                           <span className="text-xs text-green-600">+7%</span>
                         </div>
                       </div>
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          发货GMV目标完成进度
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">大盘</span>
+                        </div>
+                        <div className="text-xl font-bold text-purple-900">52%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-gray-500">目标: 14,948万</span>
+                          <span className="text-xs text-green-600">已达: 7,773万</span>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200 shadow-sm">
+                        <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          发货GMV预测最终达成
+                          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">大盘</span>
+                        </div>
+                        <div className="text-xl font-bold text-orange-900">102%</div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs text-orange-600">预测: 15,247万</span>
+                          <span className="text-xs text-orange-600">+2%</span>
+                        </div>
+                      </div>
                     </>
                   )}
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      发货GMV目标完成进度
-                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                        {calibrateSelectedIndustries.includes('大盘') ? '大盘' : calibrateSelectedIndustries[0]}
-                      </span>
-                    </div>
-                    <div className="text-xl font-bold text-purple-900">{calibrateSelectedIndustries.includes('大盘') ? '52%' : '48%'}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="text-xs text-gray-500">目标: {calibrateSelectedIndustries.includes('大盘') ? '14,948万' : '3,200万'}</span>
-                      <span className="text-xs text-green-600">已达: {calibrateSelectedIndustries.includes('大盘') ? '7,773万' : '1,536万'}</span>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200 shadow-sm">
-                    <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                      发货GMV预测最终达成
-                      <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                        {calibrateSelectedIndustries.includes('大盘') ? '大盘' : calibrateSelectedIndustries[0]}
-                      </span>
-                    </div>
-                    <div className="text-xl font-bold text-orange-900">{calibrateSelectedIndustries.includes('大盘') ? '102%' : '105%'}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="text-xs text-orange-600">预测: {calibrateSelectedIndustries.includes('大盘') ? '15,247万' : '3,360万'}</span>
-                      <span className="text-xs text-orange-600">{calibrateSelectedIndustries.includes('大盘') ? '+2%' : '+5%'}</span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* 趋势图区域 */}
@@ -12944,82 +13114,174 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                       <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      目标达成趋势（目标 vs 实际 vs 预测）
+                      {isBusinessLeader ? '3C数码二级赛道发货GMV趋势' : '目标达成趋势（目标 vs 实际 vs 预测）'}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      {/* 行业下拉多选框 */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
-                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
+                    {isBusinessLeader ? (
+                      <div className="flex items-center gap-2">
+                        {/* 赛道选择下拉框 */}
+                        <select 
+                          value={selectedTrack}
+                          onChange={(e) => setSelectedTrack(e.target.value as any)}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <span>行业: {calibrateSelectedIndustries.join(', ')}</span>
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-                        
-                        {showCalibrateIndustryDropdown && (
-                          <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
-                            <div className="p-2 max-h-[200 overflow-y-auto">
-                              <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={calibrateSelectedIndustries.includes('大盘')}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setCalibrateSelectedIndustries(['大盘']);
-                                    } else {
-                                      setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
-                                    }
-                                  }}
-                                  className="w-4 h-4"
-                                />
-                                <span className="text-sm">大盘</span>
-                              </label>
-                              {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
-                                <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                          <option value="3c">3C数码</option>
+                          <option value="phone">手机</option>
+                          <option value="computer">电脑整机</option>
+                          <option value="accessory">数码配件</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {/* 行业下拉多选框 */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
+                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
+                          >
+                            <span>行业: {calibrateSelectedIndustries.join(', ')}</span>
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                          
+                          {showCalibrateIndustryDropdown && (
+                            <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                              <div className="p-2 max-h-[200 overflow-y-auto">
+                                <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
                                   <input
                                     type="checkbox"
-                                    checked={calibrateSelectedIndustries.includes(industry)}
+                                    checked={calibrateSelectedIndustries.includes('大盘')}
                                     onChange={(e) => {
                                       if (e.target.checked) {
-                                        const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
-                                        setCalibrateSelectedIndustries([...newSelected, industry]);
+                                        setCalibrateSelectedIndustries(['大盘']);
                                       } else {
-                                        setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
+                                        setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== '大盘'));
                                       }
                                     }}
                                     className="w-4 h-4"
                                   />
-                                  <span className="text-sm">{industry}</span>
+                                  <span className="text-sm">大盘</span>
                                 </label>
-                              ))}
+                                {['3C数码', '家电', '服饰', '食品快消', '美妆个护', '其他'].map(industry => (
+                                  <label key={industry} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={calibrateSelectedIndustries.includes(industry)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          const newSelected = [...calibrateSelectedIndustries.filter(i => i !== '大盘')];
+                                          setCalibrateSelectedIndustries([...newSelected, industry]);
+                                        } else {
+                                          setCalibrateSelectedIndustries(calibrateSelectedIndustries.filter(i => i !== industry));
+                                        }
+                                      }}
+                                      className="w-4 h-4"
+                                    />
+                                    <span className="text-sm">{industry}</span>
+                                  </label>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                        <select 
+                          value={calibrateGmvType}
+                          onChange={(e) => setCalibrateGmvType(e.target.value as 'payment' | 'delivery')}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={!calibrateSelectedIndustries.includes('大盘')}
+                        >
+                          <option value="payment" disabled={!calibrateSelectedIndustries.includes('大盘')}>支付GMV</option>
+                          <option value="delivery">发货GMV</option>
+                        </select>
                       </div>
-                      <select 
-                        value={calibrateGmvType}
-                        onChange={(e) => setCalibrateGmvType(e.target.value as 'payment' | 'delivery')}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={!calibrateSelectedIndustries.includes('大盘')}
-                      >
-                        <option value="payment" disabled={!calibrateSelectedIndustries.includes('大盘')}>支付GMV</option>
-                        <option value="delivery">发货GMV</option>
-                      </select>
-                    </div>
+                    )}
                   </div>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={getCalibrateTrendData()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} unit="万" />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="target" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="目标" />
-                        <Line type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="实际" connectNulls={false} />
-                        <Line type="monotone" dataKey="forecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="预测" />
-                      </ComposedChart>
+                      {isBusinessLeader ? (
+                        <ComposedChart data={getCalibrateTrendData() as any}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} unit="万" />
+                          <Tooltip />
+                          <Legend />
+                          {/* 根据选择的赛道显示对应的三条线 */}
+                          {selectedTrack === '3c' && (
+                            <>
+                              <Line type="monotone" dataKey="c3cTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="3C数码-目标" />
+                              <Line type="monotone" dataKey="c3cActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="3C数码-实际" connectNulls={false} />
+                              <Line type="monotone" dataKey="c3cForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="3C数码-预测" />
+                            </>
+                          )}
+                          {selectedTrack === 'phone' && (
+                            <>
+                              <Line type="monotone" dataKey="phoneTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="手机-目标" />
+                              <Line type="monotone" dataKey="phoneActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="手机-实际" connectNulls={false} />
+                              <Line type="monotone" dataKey="phoneForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="手机-预测" />
+                            </>
+                          )}
+                          {selectedTrack === 'computer' && (
+                            <>
+                              <Line type="monotone" dataKey="computerTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="电脑整机-目标" />
+                              <Line type="monotone" dataKey="computerActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="电脑整机-实际" connectNulls={false} />
+                              <Line type="monotone" dataKey="computerForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="电脑整机-预测" />
+                            </>
+                          )}
+                          {selectedTrack === 'accessory' && (
+                            <>
+                              <Line type="monotone" dataKey="accessoryTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="数码配件-目标" />
+                              <Line type="monotone" dataKey="accessoryActual" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} name="数码配件-实际" connectNulls={false} />
+                              <Line type="monotone" dataKey="accessoryForecast" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" dot={false} name="数码配件-预测" />
+                            </>
+                          )}
+                        </ComposedChart>
+                      ) : (
+                        <ComposedChart data={getCalibrateTrendData() as any}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} unit="万" />
+                          <Tooltip />
+                          <Legend />
+                          {/* 大盘模式 */}
+                          {calibrateSelectedIndustries.includes('大盘') && (
+                            <>
+                              <Line type="monotone" dataKey="globalTarget" stroke="#9CA3AF" strokeWidth={2} strokeDasharray="5 5" dot={false} name="大盘-目标" />
+                              <Line type="monotone" dataKey="globalActual" stroke="#6B7280" strokeWidth={3} dot={{ r: 4 }} name="大盘-实际" connectNulls={false} />
+                              <Line type="monotone" dataKey="globalForecast" stroke="#4B5563" strokeWidth={2} strokeDasharray="3 3" dot={false} name="大盘-预测" />
+                            </>
+                          )}
+                          {/* 多行业模式 - 根据选中的行业动态渲染 */}
+                          {!calibrateSelectedIndustries.includes('大盘') && calibrateSelectedIndustries.map((industry) => (
+                            <React.Fragment key={industry}>
+                              <Line 
+                                type="monotone" 
+                                dataKey={`${industry}Target`} 
+                                stroke={industryChartColors[industry]?.target || '#9CA3AF'} 
+                                strokeWidth={2} 
+                                strokeDasharray="5 5" 
+                                dot={false} 
+                                name={`${industry}-目标`} 
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey={`${industry}Actual`} 
+                                stroke={industryChartColors[industry]?.actual || '#3B82F6'} 
+                                strokeWidth={3} 
+                                dot={{ r: 4 }} 
+                                name={`${industry}-实际`} 
+                                connectNulls={false} 
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey={`${industry}Forecast`} 
+                                stroke={industryChartColors[industry]?.forecast || '#10B981'} 
+                                strokeWidth={2} 
+                                strokeDasharray="3 3" 
+                                dot={false} 
+                                name={`${industry}-预测`} 
+                              />
+                            </React.Fragment>
+                          ))}
+                        </ComposedChart>
+                      )}
                     </ResponsiveContainer>
                   </div>
                 </div>
@@ -13031,66 +13293,119 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                       <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                       风险预警
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="global">大盘</option>
-                        <option value="industry">行业</option>
-                      </select>
-                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="full">全周期</option>
-                        <option value="phase">分阶段</option>
-                      </select>
-                      <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="level1">一级</option>
-                        <option value="level2">二级</option>
-                      </select>
-                    </div>
+                    {!isBusinessLeader && (
+                      <div className="flex items-center gap-2">
+                        <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <option value="global">大盘</option>
+                          <option value="industry">行业</option>
+                        </select>
+                        <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <option value="full">全周期</option>
+                          <option value="phase">分阶段</option>
+                        </select>
+                        <select className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <option value="level1">一级</option>
+                          <option value="level2">二级</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="space-y-3">
-                    <div className="p-3 bg-red-50 rounded-lg border border-red-100 flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                        <div>
-                          <div className="text-sm font-medium text-red-800">美妆品类目标达成风险较高</div>
-                          <div className="text-xs text-red-600 mt-1">当前进度仅42%，低于同期50%的基准，需要重点关注</div>
+                  {isBusinessLeader ? (
+                    <>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-orange-800">数码配件二级赛道达成稍低</div>
+                              <div className="text-xs text-orange-600 mt-1">当前进度59%，建议在爆发期增加配件套装活动</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-orange-200 text-orange-800 text-xs rounded-full whitespace-nowrap">中风险</span>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-green-800">手机赛道达成情况良好</div>
+                              <div className="text-xs text-green-600 mt-1">已完成60%，进度符合预期</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full whitespace-nowrap">正常</span>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-green-800">电脑整机赛道进度优秀</div>
+                              <div className="text-xs text-green-600 mt-1">已完成65%，超预期完成</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full whitespace-nowrap">正常</span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 bg-red-200 text-red-800 text-xs rounded-full whitespace-nowrap">高风险</span>
-                    </div>
-                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-                        <div>
-                          <div className="text-sm font-medium text-orange-800">食品快消爆发期目标达成可能偏低</div>
-                          <div className="text-xs text-orange-600 mt-1">预测爆发期完成度约92%，建议增加活动力度</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 bg-orange-200 text-orange-800 text-xs rounded-full whitespace-nowrap">中风险</span>
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-100 flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                        <div>
-                          <div className="text-sm font-medium text-green-800">3C数码目标达成情况良好</div>
-                          <div className="text-xs text-green-600 mt-1">已完成61%，超预期完成</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full whitespace-nowrap">正常</span>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <div className="flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium text-blue-800">AI 优化建议</div>
-                        <div className="text-xs text-blue-700 mt-1 leading-relaxed">
-                          建议将美妆品类剩余预算的20%调整至爆发期，并增加1场美妆品类日，预计可提升达成率8个百分点。
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-start gap-2">
+                          <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-medium text-blue-800">AI 优化建议</div>
+                            <div className="text-xs text-blue-700 mt-1 leading-relaxed">
+                              建议在618爆发期增加手机+配件的组合套装促销，预计可提升数码配件赛道达成率5个百分点，同时带动手机销量进一步增长。
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-red-50 rounded-lg border border-red-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-red-800">美妆品类目标达成风险较高</div>
+                              <div className="text-xs text-red-600 mt-1">当前进度仅42%，低于同期50%的基准，需要重点关注</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-red-200 text-red-800 text-xs rounded-full whitespace-nowrap">高风险</span>
+                        </div>
+                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-orange-800">食品快消爆发期目标达成可能偏低</div>
+                              <div className="text-xs text-orange-600 mt-1">预测爆发期完成度约92%，建议增加活动力度</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-orange-200 text-orange-800 text-xs rounded-full whitespace-nowrap">中风险</span>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-100 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-green-800">3C数码目标达成情况良好</div>
+                              <div className="text-xs text-green-600 mt-1">已完成61%，超预期完成</div>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full whitespace-nowrap">正常</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-start gap-2">
+                          <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-medium text-blue-800">AI 优化建议</div>
+                            <div className="text-xs text-blue-700 mt-1 leading-relaxed">
+                              建议将美妆品类剩余预算的20%调整至爆发期，并增加1场美妆品类日，预计可提升达成率8个百分点。
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* 一级->二级子赛道目标达成明细 */}
@@ -13098,7 +13413,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                       <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      一级-&gt;二级子赛道目标达成明细
+                      {isBusinessLeader ? '3C数码一级-二级子赛道目标达成明细' : '一级-&gt;二级子赛道目标达成明细'}
                     </h3>
                     <div className="flex items-center gap-2">
                       <button className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1">
@@ -13122,241 +13437,327 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {/* 3C数码 - 一级 */}
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">3C数码</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">4,100</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">2,501</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-medium">61%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">4,346</td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">106%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
-                        {/* 3C数码 - 二级 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
-                            <span className="text-gray-400">↳</span> 手机
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">2,300</td>
-                          <td className="py-2 px-3 text-center text-gray-700">1,380</td>
-                          <td className="py-2 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600">60%</span>
-                              </div>
-                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '60%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">2,438</td>
-                          <td className="py-2 px-3 text-center text-green-600">106%</td>
-                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
-                        <tr className="hover:bg-gray-50">
-                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
-                            <span className="text-gray-400">↳</span> 电脑整机
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">1,000</td>
-                          <td className="py-2 px-3 text-center text-gray-700">650</td>
-                          <td className="py-2 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600">65%</span>
-                              </div>
-                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">1,070</td>
-                          <td className="py-2 px-3 text-center text-green-600">107%</td>
-                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
-                        <tr className="hover:bg-gray-50">
-                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
-                            <span className="text-gray-400">↳</span> 数码配件
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">800</td>
-                          <td className="py-2 px-3 text-center text-gray-700">471</td>
-                          <td className="py-2 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600">59%</span>
-                              </div>
-                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '59%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">838</td>
-                          <td className="py-2 px-3 text-center text-green-600">105%</td>
-                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
+                        {isBusinessLeader ? (
+                          <>
+                            {/* 3C数码 - 一级 */}
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">3C数码</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">4,100</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">2,501</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600 font-medium">61%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">4,346</td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">106%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            {/* 3C数码 - 二级 */}
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 手机
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,300</td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,380</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600">60%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '60%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,438</td>
+                              <td className="py-2 px-3 text-center text-green-600">106%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 电脑整机
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,000</td>
+                              <td className="py-2 px-3 text-center text-gray-700">650</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600">65%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,070</td>
+                              <td className="py-2 px-3 text-center text-green-600">107%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 数码配件
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">800</td>
+                              <td className="py-2 px-3 text-center text-gray-700">471</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-orange-600">59%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '59%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">838</td>
+                              <td className="py-2 px-3 text-center text-orange-600">105%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                            </tr>
+                          </>
+                        ) : (
+                          <>
+                            {/* 3C数码 - 一级 */}
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">3C数码</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">4,100</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">2,501</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600 font-medium">61%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">4,346</td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">106%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            {/* 3C数码 - 二级 */}
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 手机
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,300</td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,380</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600">60%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '60%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,438</td>
+                              <td className="py-2 px-3 text-center text-green-600">106%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 电脑整机
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,000</td>
+                              <td className="py-2 px-3 text-center text-gray-700">650</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600">65%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,070</td>
+                              <td className="py-2 px-3 text-center text-green-600">107%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 数码配件
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">800</td>
+                              <td className="py-2 px-3 text-center text-gray-700">471</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-orange-600">59%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '59%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">838</td>
+                              <td className="py-2 px-3 text-center text-orange-600">105%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                            </tr>
+                            {/* 美妆个护 - 一级 */}
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">美妆个护</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">3,570</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">1,499</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-red-600 font-medium">42%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-red-500 rounded-full" style={{ width: '42%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">3,499</td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
+                            </tr>
+                            {/* 美妆个护 - 二级 */}
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 护肤
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,200</td>
+                              <td className="py-2 px-3 text-center text-gray-700">902</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-red-600">41%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-red-500 rounded-full" style={{ width: '41%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">2,112</td>
+                              <td className="py-2 px-3 text-center text-orange-600">96%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
+                                <span className="text-gray-400">↳</span> 彩妆
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,370</td>
+                              <td className="py-2 px-3 text-center text-gray-700">597</td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-orange-600">44%</span>
+                                  </div>
+                                  <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '44%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-center text-gray-700">1,387</td>
+                              <td className="py-2 px-3 text-center text-orange-600">101%</td>
+                              <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                            </tr>
 
-                        {/* 美妆个护 - 一级 */}
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">美妆个护</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">3,570</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,499</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-red-600 font-medium">42%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-red-500 rounded-full" style={{ width: '42%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">3,499</td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
-                        </tr>
-                        {/* 美妆个护 - 二级 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
-                            <span className="text-gray-400">↳</span> 护肤
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">2,200</td>
-                          <td className="py-2 px-3 text-center text-gray-700">902</td>
-                          <td className="py-2 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-red-600">41%</span>
-                              </div>
-                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-red-500 rounded-full" style={{ width: '41%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">2,112</td>
-                          <td className="py-2 px-3 text-center text-orange-600">96%</td>
-                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">高风险</span></td>
-                        </tr>
-                        <tr className="hover:bg-gray-50">
-                          <td className="py-2 px-4 pl-8 text-gray-700 sticky left-0 bg-white z-10">
-                            <span className="text-gray-400">↳</span> 彩妆
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">1,370</td>
-                          <td className="py-2 px-3 text-center text-gray-700">597</td>
-                          <td className="py-2 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-orange-600">44%</span>
-                              </div>
-                              <div className="w-16 h-1 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '44%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-center text-gray-700">1,387</td>
-                          <td className="py-2 px-3 text-center text-orange-600">101%</td>
-                          <td className="py-2 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
-                        </tr>
+                            {/* 其他行业 - 简化展示 */}
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">家电</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">3,280</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">1,706</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-orange-600 font-medium">52%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">3,214</td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                            </tr>
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">服饰</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">2,728</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">1,609</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600 font-medium">59%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '59%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">2,837</td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">104%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">食品快消</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">1,700</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">884</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-orange-600 font-medium">52%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">1,632</td>
+                              <td className="py-3 px-3 text-center font-medium text-orange-600">96%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
+                            </tr>
+                            <tr className="bg-gray-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">其他</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">1,100</td>
+                              <td className="py-3 px-3 text-center font-medium text-gray-900">674</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600 font-medium">61%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">1,133</td>
+                              <td className="py-3 px-3 text-center font-medium text-green-600">103%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
 
-                        {/* 其他行业 - 简化展示 */}
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">家电</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">3,280</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,706</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-orange-600 font-medium">52%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">3,214</td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">98%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">服饰</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">2,728</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,609</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-medium">59%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '59%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">2,837</td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">104%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">食品快消</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,700</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">884</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-orange-600 font-medium">52%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500 rounded-full" style={{ width: '52%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">1,632</td>
-                          <td className="py-3 px-3 text-center font-medium text-orange-600">96%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">中风险</span></td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-gray-50 z-10">其他</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">1,100</td>
-                          <td className="py-3 px-3 text-center font-medium text-gray-900">674</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-medium">61%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '61%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">1,133</td>
-                          <td className="py-3 px-3 text-center font-medium text-green-600">103%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
-
-                        {/* 大盘总计 */}
-                        <tr className="bg-blue-50">
-                          <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10">大盘总计</td>
-                          <td className="py-3 px-3 text-center font-bold text-gray-900">16,378</td>
-                          <td className="py-3 px-3 text-center font-bold text-gray-900">8,873</td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-bold">54%</span>
-                              </div>
-                              <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: '54%' }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-green-600">16,661</td>
-                          <td className="py-3 px-3 text-center font-bold text-green-600">102%</td>
-                          <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
-                        </tr>
+                            {/* 大盘总计 */}
+                            <tr className="bg-blue-50">
+                              <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10">大盘总计</td>
+                              <td className="py-3 px-3 text-center font-bold text-gray-900">16,378</td>
+                              <td className="py-3 px-3 text-center font-bold text-gray-900">8,873</td>
+                              <td className="py-3 px-3 text-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600 font-bold">54%</span>
+                                  </div>
+                                  <div className="w-20 h-1.5 bg-gray-200 mt-1 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '54%' }}></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-center font-bold text-green-600">16,661</td>
+                              <td className="py-3 px-3 text-center font-bold text-green-600">102%</td>
+                              <td className="py-3 px-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span></td>
+                            </tr>
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>
