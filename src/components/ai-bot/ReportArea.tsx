@@ -397,7 +397,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   // 促中校准状态
   const [calibrateSelectedIndustries, setCalibrateSelectedIndustries] = useState<string[]>(['大盘']);
   const [calibrateGmvType, setCalibrateGmvType] = useState<'payment' | 'delivery'>('payment');
-  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const [showCalibrateIndustryDropdown, setShowCalibrateIndustryDropdown] = useState(false);
   
   // 生成促中校准趋势图数据
   const getCalibrateTrendData = () => {
@@ -6959,6 +6959,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   促中校准
                 </button>
                 <button
+                  onClick={() => window.open(`/target-explanation?role=${role}`, '_blank')}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-blue-200 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                >
+                  <FileSearch className="w-4 h-4" />
+                  预测解释
+                </button>
+                <button
                   onClick={() => setTargetTab('reference')}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'reference' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
@@ -12892,14 +12899,14 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   {/* 行业下拉多选框 */}
                   <div className="relative">
                     <button
-                      onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
+                      onClick={() => setShowCalibrateIndustryDropdown(!showCalibrateIndustryDropdown)}
                       className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-2"
                     >
                       <span>行业选择: {calibrateSelectedIndustries.join(', ')}</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
                     
-                    {showIndustryDropdown && (
+                    {showCalibrateIndustryDropdown && (
                       <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
                         <div className="p-2 max-h-[200 overflow-y-auto">
                           <label className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
