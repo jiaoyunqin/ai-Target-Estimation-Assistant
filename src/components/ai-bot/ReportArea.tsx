@@ -6959,13 +6959,6 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   促中校准
                 </button>
                 <button
-                  onClick={() => window.open(`/target-explanation?role=${role}`, '_blank')}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-blue-200 rounded-md text-sm font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                >
-                  <FileSearch className="w-4 h-4" />
-                  预测解释
-                </button>
-                <button
                   onClick={() => setTargetTab('reference')}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${targetTab === 'reference' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
