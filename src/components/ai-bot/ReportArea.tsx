@@ -344,15 +344,16 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
   
   // Step2目标拆分结果相关状态
   const [showStep2BreakdownResult, setShowStep2BreakdownResult] = useState(false); // 是否显示Step2目标拆分结果
+  const [step2BreakdownGmvType, setStep2BreakdownGmvType] = useState<'payment' | 'delivery'>('payment'); // 目标拆分柱状图显示支付GMV还是发货GMV
   const [step2BreakdownDailyData, setStep2BreakdownDailyData] = useState([
-    { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%' },
-    { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%' },
-    { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%' },
-    { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true },
-    { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%' },
-    { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%' }
+    { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%', naturalShip: 1600, incrementShip: 490, targetShip: 2090 },
+    { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%', naturalShip: 1640, incrementShip: 510, targetShip: 2150 },
+    { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%', naturalShip: 1680, incrementShip: 530, targetShip: 2210 },
+    { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true, naturalShip: 2400, incrementShip: 1230, targetShip: 3630 },
+    { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%', naturalShip: 1080, incrementShip: 380, targetShip: 1460 },
+    { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%', naturalShip: 1040, incrementShip: 370, targetShip: 1410 }
   ]);
-  const [step2BreakdownTotal, setStep2BreakdownTotal] = useState({ natural: 11800, increment: 3670, target: 15470, ratio: '31%' });
+  const [step2BreakdownTotal, setStep2BreakdownTotal] = useState({ natural: 11800, increment: 3670, target: 15470, ratio: '31%', naturalShip: 9440, incrementShip: 2930, targetShip: 12370 });
   const [industryData, setIndustryData] = useState([
     { id: 1, level: '一级', name: '3C数码', expanded: true, total: 14948, preheat: 3289, outbreak: 8221, return: 3438, subIndustries: [
       { id: 11, name: '手机', target: 7474, preheat: 1579, outbreak: 4111, return: 1784 },
@@ -886,21 +887,26 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
     const incrementPercentage = Math.round((incrementTarget / baseValue) * 100);
     
     // 更新Step2目标拆分结果数据
+    const baseShip = Math.round(baseValue * 0.8);
+    const incrementShip = Math.round(incrementTarget * 0.8);
     setStep2BreakdownTotal({
       natural: baseValue,
       increment: incrementTarget,
       target: totalTarget,
-      ratio: `${incrementPercentage}%`
+      ratio: `${incrementPercentage}%`,
+      naturalShip: baseShip,
+      incrementShip: incrementShip,
+      targetShip: baseShip + incrementShip
     });
     
     // 生成分日明细数据
     const mockDailyData = [
-      { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%' },
-      { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%' },
-      { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%' },
-      { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true },
-      { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%' },
-      { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%' }
+      { date: '06/15', phase: '预热期', natural: 2000, increment: 620, target: 2620, stageRatio: '30%', naturalShip: 1600, incrementShip: 496, targetShip: 2096 },
+      { date: '06/16', phase: '预热期', natural: 2050, increment: 640, target: 2690, stageRatio: '30%', naturalShip: 1640, incrementShip: 512, targetShip: 2152 },
+      { date: '06/17', phase: '预热期', natural: 2100, increment: 670, target: 2770, stageRatio: '30%', naturalShip: 1680, incrementShip: 536, targetShip: 2216 },
+      { date: '06/18', phase: '爆发期(BigDay)', natural: 3000, increment: 1540, target: 4540, stageRatio: '35%', isBigDay: true, naturalShip: 2400, incrementShip: 1232, targetShip: 3632 },
+      { date: '06/19', phase: '返场期', natural: 1350, increment: 470, target: 1820, stageRatio: '35%', naturalShip: 1080, incrementShip: 376, targetShip: 1456 },
+      { date: '06/20', phase: '返场期', natural: 1300, increment: 460, target: 1760, stageRatio: '35%', naturalShip: 1040, incrementShip: 368, targetShip: 1408 }
     ];
     setStep2BreakdownDailyData(mockDailyData);
     
@@ -10536,8 +10542,27 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                       <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                      目标拆分堆叠柱状图
+                      大盘目标拆分堆叠柱状图
                     </h3>
+                    {/* GMV类型切换按钮 */}
+                    <div className="flex bg-gray-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setStep2BreakdownGmvType('payment')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          step2BreakdownGmvType === 'payment' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        支付GMV
+                      </button>
+                      <button
+                        onClick={() => setStep2BreakdownGmvType('delivery')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          step2BreakdownGmvType === 'delivery' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        发货GMV
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="h-64">
@@ -10552,8 +10577,13 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                             if (!phaseData[phaseName]) {
                               phaseData[phaseName] = { natural: 0, increment: 0, phase: phaseName };
                             }
-                            phaseData[phaseName].natural += item.natural;
-                            phaseData[phaseName].increment += item.increment;
+                            if (step2BreakdownGmvType === 'payment') {
+                              phaseData[phaseName].natural += item.natural;
+                              phaseData[phaseName].increment += item.increment;
+                            } else {
+                              phaseData[phaseName].natural += item.naturalShip;
+                              phaseData[phaseName].increment += item.incrementShip;
+                            }
                           });
                           
                           return Object.values(phaseData);
@@ -10568,6 +10598,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                               const natural = payload.find(p => p.dataKey === 'natural')?.value || 0;
                               const increment = payload.find(p => p.dataKey === 'increment')?.value || 0;
                               const total = (natural as number) + (increment as number);
+                              const gmvTypeLabel = step2BreakdownGmvType === 'payment' ? '支付GMV' : '发货GMV';
                               
                               return (
                                 <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
@@ -10579,7 +10610,7 @@ export const ReportArea: React.FC<ReportAreaProps> = ({ onClose, reportType = 'd
                                     分配增量：<span className="font-semibold text-orange-600">{(increment as number).toLocaleString()}万</span>
                                   </p>
                                   <p className="text-xs text-gray-700">
-                                    阶段目标GMV：<span className="font-semibold text-gray-900">{total.toLocaleString()}万</span>
+                                    阶段目标{gmvTypeLabel}：<span className="font-semibold text-gray-900">{total.toLocaleString()}万</span>
                                   </p>
                                 </div>
                               );
